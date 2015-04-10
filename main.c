@@ -129,20 +129,29 @@ static void display_banner (void)
 #endif
 
 	char *ver_num = " "AT91BOOTSTRAP_VERSION" ("COMPILE_TIME")";
-
+//CPU / BUS clock message
 #if defined( CONFIG_CPU_CLK_498MHZ)
-	static const char* const clocks_msg = " CLOCKS : Core:498MHz, Bus:166MHz\n";
+	static const char* const core_clock_msg = " CLOCKS: CPU: 498MHz, ";
 #elif defined (CONFIG_CPU_CLK_400MHZ)
-	static const char* const clocks_msg = " CLOCKS : Core:400MHz, Bus:132MHz\n";
+	static const char* const core_clock_msg = " CLOCKS: CPU: 400MHz, ";
 #elif defined (CONFIG_CPU_CLK_528MHZ)
-	static const char* const clocks_msg = " CLOCKS : Core:528MHz, Bus:133MHz\n";
+	static const char* const core_clock_msg = " CLOCKS: CPU: 528MHz, ";
 #else
-	static const char* const clocks_msg = "CLOCKS : UNKNOWN";
+	static const char* const core_clock_msg = "CLOCKS: CPU: UNKNOWN, ";
+#endif
+
+#if defined (CONFIG_BUS_SPEED_176MHZ)
+  static const char* const bus_clock_msg = "Bus: 176MHz";
+#elif defined (CONFIG_BUS_SPEED_133MHZ)
+  static const char* const bus_clock_msg = "Bus: 133MHz";
+#else
+  static const char* const bus_clock_msg = "Bus: UNKNOWN";
 #endif
 	usart_puts("\n\n");
 	usart_puts(version);
 	usart_puts(ver_num);
-	usart_puts(clocks_msg);
+	usart_puts(core_clock_msg);
+  usart_puts(bus_clock_msg);
 	usart_puts("\n\n");
 }
 //**************************************************************************
@@ -338,13 +347,12 @@ for(;;)
 #ifdef CONFIG_SCLK
 	slowclk_switch_osc32();
 #endif
-
+  
 #if defined(CONFIG_ENTER_NWD)
 	switch_normal_world();
 
 	/* point never reached with TZ support */
 #endif
-  
 return JUMP_ADDR;
 }
 //****************************************************
