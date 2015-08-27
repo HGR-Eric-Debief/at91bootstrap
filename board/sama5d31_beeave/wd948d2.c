@@ -84,10 +84,10 @@ void ddram_chip_config(struct ddramc_register *ddramc_config)
     ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_NOLOWPOWER | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
     //!@note Lowpower mode must be tested once the application is operationnal : Memory will be less used than when set under tests.
 //ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_SELFREFRESH | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(3);
-      
 #else
 #error "No bus clock provided!"
 #endif
+  ddramc_config->bank_offset = ddramc_config->cr & AT91C_DDRC2_DECOD_INTERLEAVED ? BA_OFFSET_WHEN_INTERLEAVED : BA_OFFSET_WHEN_SEQUENTIAL;
 }
 //**********************************************
 /**
@@ -96,8 +96,9 @@ void ddram_chip_config(struct ddramc_register *ddramc_config)
  * See the ram chip data sheet for geometry and SAMA5D3x data sheet chap. 29.7. HERE see data sheet Table 29-16, but for 256 columns !
  * Addr : XXXX X:RRR RRRR RRRR R:BB:C CCCC CC:MM (28 bit)
  * @return The special address value with BANK[1:0] = 0x2
+ * @deprecated : since bank_offset field added in ddramc_register structure
  */
-unsigned int ddram_chip_get_ba_offset (struct ddramc_register const* ddramc_config)
+static unsigned int ddram_chip_get_ba_offset (struct ddramc_register const* ddramc_config)
 {
   unsigned int ba_offset = ddramc_config->cr & AT91C_DDRC2_DECOD_INTERLEAVED ? BA_OFFSET_WHEN_INTERLEAVED : BA_OFFSET_WHEN_SEQUENTIAL;
   return ba_offset;

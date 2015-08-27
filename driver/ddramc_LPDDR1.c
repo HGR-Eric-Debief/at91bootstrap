@@ -52,7 +52,6 @@ static unsigned int read_ddramc(unsigned int address, unsigned int offset)
 #if defined (CONFIG_LPDDR1)
 int ddram_initialize(unsigned int base_address,
 			unsigned int ram_address,
-      unsigned int bank_offset,
 			struct ddramc_register *ddramc_config)
 {
 
@@ -124,7 +123,7 @@ int ddram_initialize(unsigned int base_address,
    * Activation with write to address with BA[1:0]=b10 BA position depends of the chip geometry and use.
 	 */
 	write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_EXT_LMR_CMD);
-	*((unsigned volatile int *)(ram_address + (0x2 << bank_offset))) = 0;
+	*((unsigned volatile int *)(ram_address + (0x2 << ddramc_config->bank_offset))) = 0;
    /* delay before next command*/
    udelay(200);
    

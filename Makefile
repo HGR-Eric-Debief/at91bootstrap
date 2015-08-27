@@ -331,11 +331,16 @@ endif
 #  -lgcc   : 	tells the linker to tie in newlib
 # -L$(shell dirname `$(CC) --print-libgcc-file-name`) : got the libgcc file path.
 LDFLAGS+=-nostartfiles -Map=$(BINDIR)/$(BOOT_NAME).map --cref -static
-LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`) -lgcc
 LDFLAGS+=-T $(link_script) $(GC_SECTIONS) -Ttext $(LINK_ADDR)
 
 ifneq ($(DATA_SECTION_ADDR),)
 LDFLAGS+=-Tdata $(DATA_SECTION_ADDR)
+endif
+
+#Thumb mode need some libgcc support functions.
+ifeq ($(CONFIG_THUMB),y)
+LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`)
+LIBS+=-lgcc
 endif
 
 gccversion := $(shell expr `$(CC) -dumpversion`)
@@ -396,7 +401,7 @@ endif
 $(AT91BOOTSTRAP): $(OBJS)
 	$(if $(wildcard $(BINDIR)),,mkdir -p $(BINDIR))
 	@echo "  LD        "$(BOOT_NAME).elf
-	@$(LD) $(LDFLAGS) -n -o $(BINDIR)/$(BOOT_NAME).elf $(OBJS)
+	@$(LD) $(LDFLAGS) -n -o $(BINDIR)/$(BOOT_NAME).elf $(OBJS) $(LIBS)
 #	@$(OBJCOPY) --strip-debug --strip-unneeded $(BINDIR)/$(BOOT_NAME).elf -O binary $(BINDIR)/$(BOOT_NAME).bin
 	@$(OBJCOPY) --strip-all $(BINDIR)/$(BOOT_NAME).elf -O binary $@
 	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK}

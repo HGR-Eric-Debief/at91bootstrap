@@ -321,7 +321,7 @@ static void ddramc_init(void)
 	writel(AT91C_MPDDRC_RD_DATA_PATH_TWO_CYCLES,
 			(AT91C_BASE_MPDDRC + MPDDRC_RD_DATA_PATH));
 
-	ddr3_sdram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, &ddramc_reg);
+	ddram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, &ddramc_reg);
 
 	writel(0x3, AT91C_BASE_MPDDRC + MPDDRC_LPDDR2_CAL_MR4);
 	writel(64, AT91C_BASE_MPDDRC + MPDDRC_LPDDR2_TIM_CAL);

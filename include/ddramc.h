@@ -40,31 +40,14 @@ struct ddramc_register {
 	unsigned int tim_calr;
 #elif defined(CONFIG_LPDDR1)
   unsigned int lpr;
+  unsigned int bank_offset;
 #endif
 };
 
 
-#if defined (CONFIG_LPDDR1)
-//! @note bank offset is provided and not set inside the function : more flexible.
 extern int ddram_initialize(unsigned int base_address,
       unsigned int ram_address,
-      unsigned int bank_offset,
       struct ddramc_register *ddramc_config);
-#else
-extern int ddram_initialize(unsigned int base_address,
-		unsigned int ram_address,
-		struct ddramc_register *ddramc_config);
-
-extern int lpddr2_sdram_initialize(unsigned int base_address,
-				unsigned int ram_address,
-				struct ddramc_register *ddramc_config);
-
-extern int ddr3_sdram_initialize(unsigned int base_address,
-      unsigned int ram_address,
-      struct ddramc_register *ddramc_config);
-
-#endif /*CONFIG_LPDDR1*/
-
 
 extern void ddramc_dump_regs(unsigned int base_address);
 

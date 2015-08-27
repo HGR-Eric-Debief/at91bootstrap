@@ -317,7 +317,7 @@ static void lpddr2_init(void)
 	writel(reg, (AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR));
 
 	/* DDRAM2 Controller initialize */
-	lpddr2_sdram_initialize(AT91C_BASE_MPDDRC,
+	ddram_initialize(AT91C_BASE_MPDDRC,
 				AT91C_BASE_DDRCS, &ddramc_reg);
 }
 #else

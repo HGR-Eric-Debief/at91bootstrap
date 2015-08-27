@@ -48,7 +48,6 @@
 //*************** MEMORY CHIP functions initialization prototypes  ******
 //  (implemented on dedicated memory support file)
 extern void ddram_chip_config(struct ddramc_register *ddramc_config);
-extern unsigned int ddram_chip_get_ba_offset (struct ddramc_register const* ddramc_config);
 
 //*****************************************************************
 //! This function aims at LPDDR1 initialization.
@@ -81,6 +80,6 @@ void ddramc_init(void)
   reg = AT91C_MPDDRC_RDIV_DDR2_RZQ_50 | AT91C_MPDDRC_TZQIO_4;
   writel(reg, (AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR));
 
-  /* LP-DDRAM1 Controller initialize */
-  ddram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, ddram_chip_get_ba_offset(&ddramc_reg), &ddramc_reg);
+  /* LP-DDRAM1 Controller initialization */
+  ddram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, &ddramc_reg);
 }
