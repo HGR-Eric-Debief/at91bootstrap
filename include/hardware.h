@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,6 +74,10 @@
 
 #ifdef SAMA5D4
 #include "arch/sama5d4.h"
+#endif
+
+#ifdef SAMA5D2
+#include "arch/sama5d2.h"
 #endif
 
 /* I/O Function Macro */

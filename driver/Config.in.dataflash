@@ -1,4 +1,19 @@
+choice
+	prompt "SPI Interface Select"
+	default	CONFIG_SPI
+
+config CONFIG_SPI
+	bool "Standard SPI Interface"
+	depends on CPU_HAS_SPI0 || CPU_HAS_SPI1 || CPU_HAS_SPI1
+
+config CONFIG_QSPI
+	bool "Quad SPI Interface"
+	depends on CPU_HAS_QSPI0 || CPU_HAS_QSPI1
+
+endchoice
+
 menu  "SPI configuration"
+	depends on CONFIG_SPI
 config CONFIG_DATAFLASH_LOAD_WITH_DMA
   bool "Use DMA"
   depends on ALLOW_WITH_DMA
@@ -32,6 +47,66 @@ config ALLOW_DATAFLASH_RECOVERY
 	default	n
     
 # ------- SPI boot source -----------------------------------------------------
+choice
+	prompt "SPI Bus Select"
+	default CONFIG_SPI_BUS0
+	help
+
+config CONFIG_SPI_BUS0
+	bool "SPI Bus 0"
+	depends on CPU_HAS_SPI0
+
+config CONFIG_SPI_BUS1
+	bool "SPI Bus 1"
+	depends on CPU_HAS_SPI1
+
+config CONFIG_SPI_BUS2
+	bool "SPI Bus 2"
+	depends on CPU_HAS_SPI2
+
+endchoice
+
+menu  "SPI IOSET Select"
+	depends on CPU_HAS_PIO4
+
+choice
+	prompt "SPI0 IOSET"
+	depends on CONFIG_SPI_BUS0
+	default	CONFIG_SPI0_IOSET_1
+	help
+
+config CONFIG_SPI0_IOSET_1
+	depends on CPU_HAS_SPI0_IOSET1
+	bool "SPI0 IOSET 1"
+
+config CONFIG_SPI0_IOSET_2
+	depends on CPU_HAS_SPI0_IOSET2
+	bool "SPI0 IOSET 2"
+
+endchoice
+
+choice
+	prompt "SPI1 IOSET"
+	depends on CONFIG_SPI_BUS1
+	default	CONFIG_SPI1_IOSET_1
+	help
+
+config CONFIG_SPI1_IOSET_1
+	depends on CPU_HAS_SPI1_IOSET1
+	bool "SPI1 IOSET 1"
+
+config CONFIG_SPI1_IOSET_2
+	depends on CPU_HAS_SPI1_IOSET2
+	bool "SPI1 IOSET 2"
+
+config CONFIG_SPI1_IOSET_3
+	depends on CPU_HAS_SPI1_IOSET3
+	bool "SPI1 IOSET 3"
+
+endchoice
+
+endmenu
+
 choice
 	prompt "Chip Select"
 	default CONFIG_SPI_CS0
@@ -108,6 +183,79 @@ config CONFIG_SPI_BOOT
 	default "AT91C_SPI_PCS2_DATAFLASH"	if CONFIG_SPI_BOOT_CS2
 	default "AT91C_SPI_PCS3_DATAFLASH"	if CONFIG_SPI_BOOT_CS3
 
+endmenu
+
+menu "QSPI Configuration"
+	depends on CONFIG_QSPI
+
+config CONFIG_QSPI_CLK
+	int "QSPI Clock Speed"
+	default 33000000
+	help
+	  What speed (in Hz) should the QSPI run at.
+
+choice
+	prompt "QSPI Bus Select"
+	default CONFIG_QSPI_BUS0
+	help
+
+config CONFIG_QSPI_BUS0
+	bool "QSPI Bus 0"
+	depends on CPU_HAS_QSPI0
+
+config CONFIG_QSPI_BUS1
+	bool "QSPI Bus 1"
+	depends on CPU_HAS_QSPI1
+
+endchoice
+
+menu  "QSPI IOSET Select"
+	depends on CPU_HAS_PIO4
+
+choice
+	prompt "QSPI0 IOSET"
+	depends on CONFIG_QSPI_BUS0
+	default	CONFIG_QSPI0_IOSET_1
+	help
+
+config CONFIG_QSPI0_IOSET_1
+	depends on CPU_HAS_QSPI0_IOSET1
+	bool "QSPI0 IOSET 1"
+
+config CONFIG_QSPI0_IOSET_2
+	depends on CPU_HAS_QSPI0_IOSET2
+	bool "QSPI0 IOSET 2"
+
+config CONFIG_QSPI0_IOSET_3
+	depends on CPU_HAS_QSPI0_IOSET3
+	bool "QSPI0 IOSET 3"
+
+endchoice
+
+choice
+	prompt "QSPI1 IOSET"
+	depends on CONFIG_QSPI_BUS1
+	default	CONFIG_QSPI1_IOSET_1
+	help
+
+config CONFIG_QSPI1_IOSET_1
+	depends on CPU_HAS_QSPI1_IOSET1
+	bool "QSPI1 IOSET 1"
+
+config CONFIG_QSPI1_IOSET_2
+	depends on CPU_HAS_QSPI1_IOSET2
+	bool "QSPI1 IOSET 2"
+
+config CONFIG_QSPI1_IOSET_3
+	depends on CPU_HAS_QSPI1_IOSET3
+	bool "QSPI1 IOSET 3"
+
+endchoice
+
+endmenu
+
+endmenu
+
 menu "SPI Flash"
   depends on CONFIG_DATAFLASH
 choice
@@ -164,7 +312,5 @@ config CONFIG_SPI_FLASH_PARAMS_PAGE_OFFSET
 
 endmenu
     
-endmenu
-
 endmenu
 

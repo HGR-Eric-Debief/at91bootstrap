@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,21 @@ static inline unsigned pin_to_mask(unsigned pin)
 	return 1 << ((pin) % PIO_NUM_IO);
 }
 
+#if defined CPU_HAS_PIO4
+static void pio4_set_periph(unsigned pio, unsigned mask,
+				int config, unsigned func)
+{
+	unsigned int value = func;
+
+	write_pio(pio, PIO_MSKR, mask);
+
+	value |= (config & PIO_PULLUP) ? AT91C_PIO_CFGR_PUEN : 0;
+	value |= (config & PIO_PULLDOWN) ? AT91C_PIO_CFGR_PDEN : 0;
+
+	write_pio(pio, PIO_CFGR, value);
+}
+#endif
+
 static int pio_set_a_periph(unsigned pin, int config)
 {
 	unsigned pio = pin_to_controller(pin);
@@ -100,9 +115,12 @@ static int pio_set_a_periph(unsigned pin, int config)
 	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_A);
+#else
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, ((config & PIO_PULLUP) ? PIO_PPUER : PIO_PPUDR), mask);
-#ifdef CONFIG_HAS_PIO3
+#ifdef CPU_HAS_PIO3
 	write_pio(pio, ((config & PIO_PULLDOWN) ? PIO_PPDER : PIO_PPDDR), mask);
 
 	write_pio(pio, PIO_SP1, read_pio(pio, PIO_SP1) & ~mask);
@@ -111,6 +129,7 @@ static int pio_set_a_periph(unsigned pin, int config)
 	write_pio(pio, PIO_ASR, mask);
 #endif
 	write_pio(pio, PIO_PDR, mask);
+#endif
 
 	return 0;
 }
@@ -126,9 +145,12 @@ static int pio_set_b_periph(unsigned pin, int config)
 	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_B);
+#else
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, ((config & PIO_PULLUP) ? PIO_PPUER : PIO_PPUDR), mask);
-#ifdef CONFIG_HAS_PIO3
+#ifdef CPU_HAS_PIO3
 	write_pio(pio, ((config & PIO_PULLDOWN) ? PIO_PPDER : PIO_PPDDR), mask);
 
 	write_pio(pio, PIO_SP1, read_pio(pio, PIO_SP1) | mask);
@@ -137,15 +159,17 @@ static int pio_set_b_periph(unsigned pin, int config)
 	write_pio(pio, PIO_BSR, mask);
 #endif
 	write_pio(pio, PIO_PDR, mask);
+#endif
 
 	return 0;
 }
 
-#ifdef CONFIG_HAS_PIO3
 static int pio_set_c_periph(unsigned pin, int config)
 {
 	unsigned pio = pin_to_controller(pin);
 	unsigned mask = pin_to_mask(pin);
+
+	mask = mask;
 
 	if (pio >= AT91C_NUM_PIO)
 		return -1;
@@ -153,12 +177,16 @@ static int pio_set_c_periph(unsigned pin, int config)
 	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_C);
+#elif defined CPU_HAS_PIO3
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, ((config && PIO_PULLUP) ? PIO_PPUER : PIO_PPUDR), mask);
 	write_pio(pio, ((config & PIO_PULLDOWN) ? PIO_PPDER : PIO_PPDDR), mask);
 	write_pio(pio, PIO_SP1, read_pio(pio, PIO_SP1) & ~mask);
 	write_pio(pio, PIO_SP2, read_pio(pio, PIO_SP2) | mask);
 	write_pio(pio, PIO_PDR, mask);
+#endif
 
 	return 0;
 }
@@ -168,22 +196,87 @@ static int pio_set_d_periph(unsigned pin, int config)
 	unsigned pio = pin_to_controller(pin);
 	unsigned mask = pin_to_mask(pin);
 
+	mask = mask;
+
 	if (pio >= AT91C_NUM_PIO)
 		return -1;
 
 	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_D);
+#elif defined CPU_HAS_PIO3
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, ((config && PIO_PULLUP) ? PIO_PPUER : PIO_PPUDR), mask);
 	write_pio(pio, ((config & PIO_PULLDOWN) ? PIO_PPDER : PIO_PPDDR), mask);
 	write_pio(pio, PIO_SP1, read_pio(pio, PIO_SP1) | mask);
 	write_pio(pio, PIO_SP2, read_pio(pio, PIO_SP2) | mask);
 	write_pio(pio, PIO_PDR, mask);
+#endif
 
 	return 0;
 }
+
+static int pio_set_e_periph(unsigned pin, int config)
+{
+	unsigned pio = pin_to_controller(pin);
+	unsigned mask = pin_to_mask(pin);
+
+	mask = mask;
+
+	if (pio >= AT91C_NUM_PIO)
+		return -1;
+
+	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
+		return -1;
+
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_E);
 #endif
+
+	return 0;
+};
+
+static int pio_set_f_periph(unsigned pin, int config)
+{
+	unsigned pio = pin_to_controller(pin);
+	unsigned mask = pin_to_mask(pin);
+
+	mask = mask;
+
+	if (pio >= AT91C_NUM_PIO)
+		return -1;
+
+	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
+		return -1;
+
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_F);
+#endif
+
+	return 0;
+};
+
+static int pio_set_g_periph(unsigned pin, int config)
+{
+	unsigned pio = pin_to_controller(pin);
+	unsigned mask = pin_to_mask(pin);
+
+	mask = mask;
+
+	if (pio >= AT91C_NUM_PIO)
+		return -1;
+
+	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
+		return -1;
+
+#if defined CPU_HAS_PIO4
+	pio4_set_periph(pio, mask, config, AT91C_PIO_CFGR_FUNC_PERIPH_G);
+#endif
+
+	return 0;
+};
 
 int pio_set_gpio_input(unsigned pin, int config)
 {
@@ -196,13 +289,26 @@ int pio_set_gpio_input(unsigned pin, int config)
 	if (config & PIO_PULLUP && config & PIO_PULLDOWN)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	write_pio(pio, PIO_MSKR, mask);
+
+	mask = AT91C_PIO_CFGR_FUNC_GPIO;
+	mask |= (config & PIO_DEGLITCH) ? AT91C_PIO_CFGR_IFEN : 0;
+	mask |= (config & PIO_PULLUP) ? AT91C_PIO_CFGR_PUEN : 0;
+	mask |= (config & PIO_PULLDOWN) ? AT91C_PIO_CFGR_PDEN : 0;
+
+	write_pio(pio, PIO_CFGR, mask);
+#else
+	write_pio(pio, ((config & PIO_DEGLITCH) ? PIO_IFER : PIO_IFDR), mask);
+
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, ((config & PIO_PULLUP) ? PIO_PPUER : PIO_PPUDR), mask);
-#ifdef CONFIG_HAS_PIO3
+#ifdef CPU_HAS_PIO3
 	write_pio(pio, ((config & PIO_PULLDOWN) ? PIO_PPDER : PIO_PPDDR), mask);
 #endif
 	write_pio(pio, PIO_ODR, mask);
 	write_pio(pio, PIO_PER, mask);
+#endif
 
 	return 0;
 }
@@ -215,16 +321,26 @@ int pio_set_gpio_output(unsigned pin, int value)
 	if (pio >= AT91C_NUM_PIO)
 		return -1;
 
+#if defined CPU_HAS_PIO4
+	write_pio(pio, PIO_MSKR, mask);
+
+	write_pio(pio, PIO_CFGR,
+			(AT91C_PIO_CFGR_FUNC_GPIO | AT91C_PIO_CFGR_DIR));
+	write_pio(pio, (value ? PIO_SODR : PIO_CODR), mask);
+#else
 	write_pio(pio, PIO_IDR, mask);
 	write_pio(pio, PIO_PPUDR, mask);
 	write_pio(pio, (value ? PIO_SODR : PIO_CODR), mask);
 	write_pio(pio, PIO_OER, mask);
 	write_pio(pio, PIO_PER, mask);
+#endif
 
 	return 0;
 }
 
-static int pio_set_deglitch(unsigned pin, int is_on)
+static int pio_config_gpio_output(unsigned int pin,
+				unsigned int config,
+				int value)
 {
 	unsigned pio = pin_to_controller(pin);
 	unsigned mask = pin_to_mask(pin);
@@ -232,20 +348,20 @@ static int pio_set_deglitch(unsigned pin, int is_on)
 	if (pio >= AT91C_NUM_PIO)
 		return -1;
 
-	write_pio(pio, (is_on ? PIO_IFER : PIO_IFDR), mask);
+#if defined CPU_HAS_PIO4
+	unsigned reg_value;
 
-	return 0;
-}
+	write_pio(pio, PIO_MSKR, mask);
 
-static int pio_set_multi_drive(unsigned pin, int is_on)
-{
-	unsigned pio = pin_to_controller(pin);
-	unsigned mask = pin_to_mask(pin);
+	reg_value = AT91C_PIO_CFGR_FUNC_GPIO | AT91C_PIO_CFGR_DIR;
+	reg_value |= (config & PIO_OPENDRAIN) ? AT91C_PIO_CFGR_OPD : 0;
+	write_pio(pio, PIO_CFGR, reg_value);
+	write_pio(pio, (value ? PIO_SODR : PIO_CODR), mask);
+#else
+	write_pio(pio, ((config & PIO_OPENDRAIN) ? PIO_MDER : PIO_MDDR), mask);
 
-	if (pio >= AT91C_NUM_PIO)
-		return -1;
-
-	write_pio(pio, (is_on ? PIO_MDER : PIO_MDDR), mask);
+	pio_set_gpio_output(pin, value);
+#endif
 
 	return 0;
 }
@@ -277,6 +393,7 @@ int pio_get_value(unsigned pin)
 	return ((pdsr & mask) != 0);
 }
 
+
 int pio_configure(const struct pio_desc *pio_desc)
 {
 	unsigned pio, pin = 0;
@@ -293,33 +410,32 @@ int pio_configure(const struct pio_desc *pio_desc)
 			return 0;
 		} else if (pio_desc->type == PIO_PERIPH_A) {
 			pio_set_a_periph(pio_desc->pin_num,
-					(pio_desc->attribute
-						& (PIO_PULLUP | PIO_PULLDOWN)));
+						pio_desc->attribute);
 		} else if (pio_desc->type == PIO_PERIPH_B) {
 			pio_set_b_periph(pio_desc->pin_num,
-					(pio_desc->attribute
-						& (PIO_PULLUP | PIO_PULLDOWN)));
-#ifdef CONFIG_HAS_PIO3
+						pio_desc->attribute);
 		} else if (pio_desc->type == PIO_PERIPH_C) {
 			pio_set_c_periph(pio_desc->pin_num,
-					(pio_desc->attribute
-						& (PIO_PULLUP | PIO_PULLDOWN)));
+						pio_desc->attribute);
 		} else if (pio_desc->type == PIO_PERIPH_D) {
 			pio_set_d_periph(pio_desc->pin_num,
-					(pio_desc->attribute
-						& (PIO_PULLUP | PIO_PULLDOWN)));
-#endif
+						pio_desc->attribute);
+		} else if (pio_desc->type == PIO_PERIPH_E) {
+			pio_set_e_periph(pio_desc->pin_num,
+						pio_desc->attribute);
+		} else if (pio_desc->type == PIO_PERIPH_F) {
+			pio_set_f_periph(pio_desc->pin_num,
+						pio_desc->attribute);
+		} else if (pio_desc->type == PIO_PERIPH_G) {
+			pio_set_g_periph(pio_desc->pin_num,
+						pio_desc->attribute);
 		} else if (pio_desc->type == PIO_INPUT) {
-			pio_set_deglitch(pio_desc->pin_num,
-				(pio_desc->attribute & PIO_DEGLITCH) ? 1 : 0);
 			pio_set_gpio_input(pio_desc->pin_num,
-					(pio_desc->attribute
-						& (PIO_PULLUP | PIO_PULLDOWN)));
+						pio_desc->attribute);
 		} else if (pio_desc->type == PIO_OUTPUT) {
-			pio_set_multi_drive(pio_desc->pin_num,
-				(pio_desc->attribute & PIO_OPENDRAIN) ? 1 : 0);
-			pio_set_gpio_output(pio_desc->pin_num,
-				pio_desc->default_value);
+			pio_config_gpio_output(pio_desc->pin_num,
+						pio_desc->attribute,
+						pio_desc->default_value);
 		} else {
 			return 0;
 		}

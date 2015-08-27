@@ -25,8 +25,7 @@ BINDIR:=$(TOPDIR)/binaries
 
 
 DATE := $(shell date --rfc-3339=seconds)
-VERSION := 3.7.1
-REVISION :=
+REVISION := alpha5
 SCMINFO := $(shell ($(TOPDIR)/host-utilities/setlocalversion $(TOPDIR)))
 
 ifeq ($(SCMINFO),)
@@ -149,6 +148,7 @@ CRYSTAL:=$(strip $(subst ",,$(CONFIG_CRYSTAL)))
 
 # driver definitions
 SPI_CLK:=$(strip $(subst ",,$(CONFIG_SPI_CLK)))
+QSPI_CLK:=$(strip $(subst ",,$(CONFIG_QSPI_CLK)))
 SPI_BOOT:=$(strip $(subst ",,$(CONFIG_SPI_BOOT)))
 
 #Add name decoration according to the BUILD destination.
@@ -266,15 +266,18 @@ endif
 
 ifeq ($(SYMLINK),)
 SYMLINK=at91bootstrap.bin
-ELF_SYMLINK=at91bootstrap.elf
+SYMLINK_ELF=at91bootstrap.elf
+endif
+
+ifeq ($(SYMLINK_BOOT),)
+SYMLINK_BOOT=boot.bin
 endif
 
 COBJS-y:= $(TOPDIR)/main.o $(TOPDIR)/board/$(BOARDNAME)/$(BOARDNAME).o
 SOBJS-y := $(TOPDIR)/crt0_gnu.o
 
 
-
-include	lib/libc.mk
+include	lib/lib.mk
 include	driver/driver.mk
 include	fs/src/fat.mk
 
@@ -326,7 +329,9 @@ endif
 #    --cref:    add cross reference to map file
 #  -lc 	   : 	tells the linker to tie in newlib
 #  -lgcc   : 	tells the linker to tie in newlib
+# -L$(shell dirname `$(CC) --print-libgcc-file-name`) : got the libgcc file path.
 LDFLAGS+=-nostartfiles -Map=$(BINDIR)/$(BOOT_NAME).map --cref -static
+LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`) -lgcc
 LDFLAGS+=-T $(link_script) $(GC_SECTIONS) -Ttext $(LINK_ADDR)
 
 ifneq ($(DATA_SECTION_ADDR),)
@@ -395,7 +400,8 @@ $(AT91BOOTSTRAP): $(OBJS)
 #	@$(OBJCOPY) --strip-debug --strip-unneeded $(BINDIR)/$(BOOT_NAME).elf -O binary $(BINDIR)/$(BOOT_NAME).bin
 	@$(OBJCOPY) --strip-all $(BINDIR)/$(BOOT_NAME).elf -O binary $@
 	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK}
-	@ln -sf $(BOOT_NAME).elf ${BINDIR}/${ELF_SYMLINK}
+	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK_BOOT}
+	@ln -sf $(BOOT_NAME).elf ${BINDIR}/${SYMLINK_ELF}
 
 %.o : %.c .config
 	@echo "  CC        "$<
@@ -412,18 +418,20 @@ rebuild: clean all
 ChkFileSize: $(AT91BOOTSTRAP)
 	@( fsize=`./scripts/get_sram_size.sh $(BINDIR)/$(BOOT_NAME).map`; \
 	  if [ $$? -ne 0 ] ; then \
-		rm $(BINDIR)/$(BOOT_NAME).bin ;\
-		rm ${BINDIR}/${SYMLINK}; \
+		rm $(BINDIR)/*.bin ;\
+		rm ${BINDIR}/*.elf; \
+		rm ${BINDIR}/*.map; \
 		exit 3; \
 	  fi ; \
 	  echo "Size of $(BOOT_NAME).bin is $$fsize bytes"; \
 	  if [ "$$fsize" -gt "$(BOOTSTRAP_MAXSIZE)" ] ; then \
 		echo "[Failed***] It's too big to fit into SRAM area. the support maximum size is $(BOOTSTRAP_MAXSIZE)"; \
-		rm $(BINDIR)/$(BOOT_NAME).bin ;\
-		rm ${BINDIR}/${SYMLINK}; \
+		rm $(BINDIR)/*.bin ;\
+		rm ${BINDIR}/*.elf; \
+		rm ${BINDIR}/*.map; \
 		exit 2;\
 	  else \
-	  	echo "[Succeeded] It's OK to fit into SRAM area ($(BOOTSTRAP_MAXSIZE) bytes)"; \
+	  	echo "[Succeeded] It's OK; it fits into SRAM area ($(BOOTSTRAP_MAXSIZE) bytes)"; \
 		stack_space=`expr $(BOOTSTRAP_MAXSIZE) - $$fsize`; \
 		echo "[Attention] The space left for stack is $$stack_space bytes"; \
 	  fi )

@@ -71,16 +71,18 @@ config CONFIG_LOAD_UBOOT
 	  like U-boot into the last MB of SDRAM.
 
 config CONFIG_LOAD_LINUX
+	select CONFIG_LINUX_IMAGE
 	bool "Support loading Linux directly"
   depends on !CONFIG_SAMA5D31_BEEAVE
 	---help---
 	   Load Linux kernel directly from storage media
 
 config CONFIG_LOAD_ANDROID
-	bool "Support loading android directly"
+	select CONFIG_LINUX_IMAGE
+	bool "Support loading Android directly"
   depends on !CONFIG_SAMA5D31_BEEAVE
 	help
-	   Load android image directly from storage media
+	   Load Android image directly from storage media
 
 config CONFIG_LOAD_1MB
 	bool "Load 1 MB into start of SDRAM"
@@ -104,254 +106,34 @@ config CONFIG_LOAD_64KB
 
 endchoice
 
-choice
-	prompt "Linux Image Type Select"
+config CONFIG_LINUX_IMAGE
 	depends on CONFIG_LOAD_LINUX || CONFIG_LOAD_ANDROID
-	default CONFIG_LINUX_UIMAGE
-
-config CONFIG_LINUX_UIMAGE
-	bool "Load Linux uImage"
+	bool
 	help
-	  Select to load linux uImage to boot
-
-config CONFIG_LINUX_ZIMAGE
-	bool "Load Linux zImage"
-	help
-	  Select to load linux zImage to boot
-
-endchoice
+	  Select to load linux uImage or zImage to boot
 
 #
-# Linux Image Storage Setup
+# Kernel Image Storage Setup
 #
-menu "Linux Image Storage Setup"
-	depends on CONFIG_LOAD_LINUX
-
-config CONFIG_MEM_BANK
-	string "Extern Memory Bank Base Address"
-	default "0x70000000" if AT91SAM9G45
-	default "0x20000000"
-	
-config CONFIG_MEM_SIZE
-	string "Extern Memory Bank Size (if enabled)"
-	default "0x2000000" if CONFIG_RAM_32MB
-	default "0x4000000" if CONFIG_RAM_64MB
-	default "0x8000000" if CONFIG_RAM_128MB
-	default "0x10000000" if CONFIG_RAM_256MB
-	default "0x20000000" if CONFIG_RAM_512MB
-	
-config CONFIG_LINUX_KERNEL_ARG_STRING
-	string "Linux kernel parameters"
-source "board/at91sam9261ek/Config.in.linux_arg"
-source "board/at91sam9263ek/Config.in.linux_arg"
-source "board/at91sam9g10ek/Config.in.linux_arg"
-source "board/at91sam9g20ek/Config.in.linux_arg"
-source "board/at91sam9rlek/Config.in.linux_arg"
-source "board/at91sam9xeek/Config.in.linux_arg"
-source "board/at91sam9m10g45ek/Config.in.linux_arg"
-source "board/at91sam9x5ek/Config.in.linux_arg"
-source "board/at91sam9n12ek/Config.in.linux_arg"
-source "board/sama5d3xek/Config.in.linux_arg"
-source "board/sama5d3_xplained/Config.in.linux_arg"
-source "board/sama5d3x_cmp/Config.in.linux_arg"
-source "board/sama5d4ek/Config.in.linux_arg"
-source "board/sama5d4_xplained/Config.in.linux_arg"
-
-config CONFIG_IMG_ADDRESS
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	string "Flash Offset for Linux Kernel Image"
-	default "0x00008000" if CONFIG_FLASH
-	default "0x00042000" if CONFIG_DATAFLASH
-	default "0x00200000" if CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD
-	help
-
-config CONFIG_JUMP_ADDR
-	string "The External Ram Address to Load Kernel Image"
-	default "0x72000000" if AT91SAM9G45
-	default "0x22000000"
-	help
-	  The entry point to which the bootstrap will pass control.
-
-config CONFIG_OF_LIBFDT
-	bool "Flattened Device Tree Support"
-	default y
-
-config CONFIG_OF_OFFSET
-	string "The Offset of Flash Device Tree Blob "
-	depends on CONFIG_OF_LIBFDT && (CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH)
-	default "0x00008400" if CONFIG_DATAFLASH
-	default "0x00180000" if CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD
-
-config CONFIG_OF_ADDRESS
-	string "The External Ram Address to Load Device Tree Blob"
-	depends on CONFIG_OF_LIBFDT
-	default "0x71000000" if AT91SAM9G45
-	default "0x21000000"
-	help
-
-endmenu
-
-#
-# Android Image Storage Setup
-#
-menu "Android Image Storage Setup"
-	depends on CONFIG_LOAD_ANDROID
-
-config CONFIG_MEM_BANK
-	string "Extern Memory Bank Base Address"
-	default "0x70000000" if AT91SAM9G45
-	default "0x20000000"
-
-config CONFIG_MEM_SIZE
-	string "Extern Memory Bank Size"
-	default "0x2000000" if CONFIG_RAM_32MB
-	default "0x4000000" if CONFIG_RAM_64MB
-	default "0x8000000" if CONFIG_RAM_128MB
-	default "0x10000000" if CONFIG_RAM_256MB
-	default "0x20000000" if CONFIG_RAM_512MB
-
-config CONFIG_LINUX_KERNEL_ARG_STRING
-	string "android kernel command line"
-source "board/sama5d3xek/Config.in.android_arg"
-
-config CONFIG_IMG_ADDRESS
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	string "Flash Offset for Linux Kernel Image"
-	default "0x00008000" if CONFIG_FLASH
-	default "0x00042000" if CONFIG_DATAFLASH
-	default "0x00200000" if CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD
-	help
-
-config CONFIG_JUMP_ADDR
-	string "The External Ram Address to Load Kernel Image"
-	default "0x72000000" if AT91SAM9G45
-	default "0x22000000"
-	help
-	  The entry point to which the bootstrap will pass control.
-
-config CONFIG_OF_LIBFDT
-	bool "Flattened Device Tree Support"
-	default y
-
-config CONFIG_OF_OFFSET
-	string "The Offset of Flash Device Tree Blob "
-	depends on CONFIG_OF_LIBFDT && (CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH)
-	default "0x00008400" if CONFIG_DATAFLASH
-	default "0x00180000" if CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD
-
-config CONFIG_OF_ADDRESS
-	string "The External Ram Address to Load Device Tree Blob"
-	depends on CONFIG_OF_LIBFDT
-	default "0x71000000" if AT91SAM9G45
-	default "0x21000000"
-	help
-
-endmenu
+source "Config.in.kernel"
 
 #
 # U-Boot Image Storage Setup
 #
-menu "U-Boot Image Storage Setup"
-	depends on CONFIG_LOAD_UBOOT
-
-config CONFIG_IMG_ADDRESS
-	string "Flash Offset for U-Boot"
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	default "0x00008000" if CONFIG_FLASH
-	default "0x00008400" if CONFIG_DATAFLASH
-	default "0x00040000" if CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD
-	help
-
-config CONFIG_IMG_SIZE
-	string "U-Boot Image Size"
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	default	"0x00080000"
-	help
-	  at91bootstrap will copy this size of U-Boot image
-
-config CONFIG_JUMP_ADDR
-	string "The External Ram Address to Load U-Boot Image"
-	default "0x73F00000" if AT91SAM9G45
-	default "0x26F00000" if AT91SAM9X5 || AT91SAM9N12 || SAMA5D3X  || SAMA5D4
-	default "0x21F00000" if AT91SAM9260 || AT91SAM9261 || AT91SAM9263 || AT91SAM9G10 || AT91SAM9G20 || AT91SAM9RL
-	default "0x23F00000"
-	help
-	  The entry point to which the bootstrap will pass control.
-
-endmenu
+source "Config.in.u-boot"
 
 #
 # Demo App Image Storage Setup
 #
-menu "Demo Application Image Storage Setup"
-	depends on CONFIG_LOAD_64KB || CONFIG_LOAD_1MB || CONFIG_LOAD_4MB
-
-config CONFIG_IMG_ADDRESS
-	string "Flash Offset for Demo-App"
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	default	"0x00000000" if CONFIG_SDCARD || CONFIG_SAMA5D31_BEEAVE
-	default "0x00008400" if CONFIG_DATAFLASH
-	default "0x00040000" if CONFIG_NANDFLASH
-
-config CONFIG_IMG_SIZE
-	string "Demo-App Image Size"
-	depends on CONFIG_DATAFLASH || CONFIG_FLASH || CONFIG_NANDFLASH
-	default	"0x00010000"	if CONFIG_LOAD_64KB
-	default	"0x00100000"	if CONFIG_LOAD_1MB
-	default	"0x00400000"	if CONFIG_LOAD_4MB
-	help
-	  at91bootstrap will copy this size of Demo-App image
-
-config CONFIG_JUMP_ADDR
-	string "The External Ram Address to Load Demo-App Image"
-	default "0x70000000" if AT91SAM9G45
-	default "0x20000000"
-	help
-	  The entry point to which the bootstrap will pass control.
-
-endmenu
+source "Config.in.app-image"
 
 config CONFIG_IMAGE_NAME
 	string
-	default "uImage" if CONFIG_LINUX_UIMAGE
-	default "zImage" if CONFIG_LINUX_ZIMAGE
+	default "Image" if CONFIG_LINUX_IMAGE
 	default "u-boot.bin" if CONFIG_LOAD_UBOOT
 	default "softpack.bin" if CONFIG_LOAD_64KB || CONFIG_LOAD_4MB || CONFIG_LOAD_1MB
 	help
     the file loaded from the SDCARD as the third level bootloader.
-#
-# Application checked load support
-#
-menu "Application checked load support"
- depends on CONFIG_SAMA5D31_BEEAVE
- 
-config CONFIG_CHECK_APPLICATION_LOAD
-  bool "Validate application load"
-  depends on !CONFIG_UPLOAD_3RD_STAGE
-  default false
-  help
-    The Application load will be validate with a special value existing at its starting point + 0x4 address. the value is defined in the application's startup code and must defined here too.
-
-config CONFIG_CHECK_APPLICATION_VALUE
-  hex "Validation value (CHECK in application startup code !)"
-  depends on CONFIG_CHECK_APPLICATION_LOAD
-  default 0xECDEB1EF
-  help
-    The value used to validate the firmware load. Must be kep in sync in the Application software !!
-
-config CONFIG_CHECK_APPLICATION_VAL_ADDR_OFFSET
-  int "Check value address offset"
-  depends on CONFIG_CHECK_APPLICATION_LOAD
-  default 4
-  help
-    This is the address offset of the validation value.
-    
-endmenu
 
 config CONFIG_NO_CONSOLE_OUTPUT
   bool "NO DBGU console output"
@@ -420,6 +202,19 @@ config CONFIG_DISABLE_WATCHDOG
 
 menu "Hardware Initialization Options"
 
+config CONFIG_HW_DISPLAY_BANNER
+	bool "Display Banner"
+	default y
+	help
+	  Display banner
+
+config CONFIG_HW_BANNER
+	string Banner
+	default "\"\\n\\nAT91Bootstrap \" AT91BOOTSTRAP_VERSION \" (\" COMPILE_TIME \")\\n\\n\""
+	depends on CONFIG_HW_DISPLAY_BANNER
+	help
+	  The banner displayed on serial port
+
 config CONFIG_HW_INIT
 	bool "Call Hardware Initialization"
 	default y
@@ -429,10 +224,11 @@ config CONFIG_HW_INIT
 endmenu
 
 menu "Slow Clock Configuration Options"
-	depends on AT91SAM9RL || AT91SAM9G45 || AT91SAM9X5 || AT91SAM9N12 || SAMA5D3X || SAMA5D4
+	depends on CPU_HAS_SCKC
 
 config CONFIG_SCLK
 	bool "Use external 32KHZ oscillator as source of slow clock"
+	default y
 	help
 	  Use external 32KHZ oscillator as source of slow clock
 
@@ -446,7 +242,7 @@ config CONFIG_SCLK_BYPASS
 endmenu
 
 menu "ARM TurstZone Options"
-	depends on CONFIG_TRUSTZONE
+	depends on CPU_HAS_TRUSTZONE
 
 config CONFIG_MATRIX
 	bool "Enable Configure the Matrix"

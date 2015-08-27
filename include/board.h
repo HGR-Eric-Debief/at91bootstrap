@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,10 @@
 #include "sama5d4_xplained.h"
 #endif
 
+#ifdef CONFIG_SAMA5D2_XPLAINED
+#include "sama5d2_xplained.h"
+#endif
+
 /*
  * Functions Prototype
  */
@@ -101,9 +105,17 @@ extern void nandflash_hw_init(void);
 
 extern void at91_spi0_hw_init(void);
 
+extern void at91_qspi_hw_init(void);
+
 extern void at91_mci0_hw_init(void);
 
+extern void at91_sdhc_hw_init(void);
+
+extern void at91_board_set_dtb_name(char *of_name);
+
 extern void norflash_hw_init(void);
+
+extern char *board_override_cmd_line(void);
 
 /* PM Support */
 extern unsigned int at91_twi0_hw_init(void);

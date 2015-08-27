@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -94,11 +94,13 @@
 #define 	AT91C_DDRC2_CAS_3		(0x3UL << 4)
 #define 	AT91C_DDRC2_CAS_4		(0x4UL << 4)
 #define 	AT91C_DDRC2_CAS_5		(0x5UL << 4)
-#define 	AT91C_DDRC2_CAS_2_5		(0x6UL << 4)
+#define 	AT91C_DDRC2_CAS_6		(0x6UL << 4)
 #define AT91C_DDRC2_DLL		(0x1UL << 7)
 #define 	AT91C_DDRC2_DLL_RESET_DISABLED	(0x0UL << 7)
 #define 	AT91C_DDRC2_DLL_RESET_ENABLED	(0x1UL << 7)
 #define AT91C_DDRC2_DIC_DS	(0x1UL << 8)
+#define		AT91C_DDRC2_NORMAL_STRENGTH_RZQ6	(0x0UL << 8)
+#define		AT91C_DDRC2_WEAK_STRENGTH_RZQ7		(0x1UL << 8)
 #define AT91C_DDRC2_DIS_DLL	(0x1UL << 9)
 #define 	AT91C_DDRC2_DIS_DLL_DISABLED	(0x0UL << 9)
 #define 	AT91C_DDRC2_DIS_DLL_ENABLED	(0x1UL << 9)
@@ -199,6 +201,8 @@
 #define 	AT91C_DDRC2_MD_LP_SDR_SDRAM	(0x1UL)
 #define 	AT91C_DDRC2_MD_DDR_SDRAM	(0x2UL)
 #define 	AT91C_DDRC2_MD_LP_DDR_SDRAM	(0x3UL)
+#define 	AT91C_DDRC2_MD_DDR3_SDRAM	(0x4UL)
+#define 	AT91C_DDRC2_MD_LPDD3_SDRAM	(0x5UL)
 #define 	AT91C_DDRC2_MD_DDR2_SDRAM	(0x6UL)
 #define		AT91C_DDRC2_MD_LPDDR2_SDRAM	(0x7UL)
 #define AT91C_DDRC2_DBW		(0x1UL << 4)
@@ -238,7 +242,8 @@
 #define		AT91C_MPDDRC_DISABLE_CALIB		(0x00 << 4)
 #define		AT91C_MPDDRC_EN_CALIB		(0x01 << 4)
 
-#define	AT91C_MPDDRC_TZQIO	(0x1FUL << 8)
+#define	AT91C_MPDDRC_TZQIO	(0x7FUL << 8)
+#define	AT91C_MPDDRC_TZQIO_(x)		((x) << 8)
 #define		AT91C_MPDDRC_TZQIO_0	(0x0UL << 8)
 #define		AT91C_MPDDRC_TZQIO_1	(0x1UL << 8)
 #define		AT91C_MPDDRC_TZQIO_3	(0x3UL << 8)

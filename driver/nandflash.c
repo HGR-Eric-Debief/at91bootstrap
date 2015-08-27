@@ -65,6 +65,8 @@ static struct nand_chip nand_ids[] = {
 	{0xadda, 0x800, 0x20000, 0x800, 0x40, 0x0},
 	/* Hynix HY27UF162G2A 256MB */
 	{0xadca, 0x800, 0x20000, 0x800, 0x40, 0x1},
+	/* Hynix HY27UF162G2B 512MB */
+	{0xaddc, 0x1000, 0x20000, 0x800, 0x40, 0x0},
 	/* EON EN27LN1G08 128MB */
 	{0x92f1, 0x400, 0x20000, 0x800, 0x40, 0x0},
 #endif
@@ -425,7 +427,7 @@ static int nandflash_detect_non_onfi(struct nand_chip *chip)
 
 	if (i == ARRAY_SIZE(nand_ids)) {
 		dbg_info("NAND: Not found Manufacturer ID: %d," \
-			"Chip ID: 0x%d\n", manf_id, dev_id);
+			"Chip ID: %d\n", manf_id, dev_id);
 
 		return -1;
 	}
@@ -906,7 +908,6 @@ static int nand_loadimage(struct nand_info *nand,
 }
 
 #if defined(CONFIG_LOAD_LINUX) || defined(CONFIG_LOAD_ANDROID)
-
 static int update_image_length(struct nand_info *nand,
 				unsigned int offset,
 				unsigned char *dest,
@@ -970,24 +971,22 @@ int load_nandflash(struct image_info *image)
 	if (ret)
 		return ret;
 
-	if (image->of) {
-#if defined(CONFIG_LOAD_LINUX) || defined(CONFIG_LOAD_ANDROID)
-		length = update_image_length(&nand,
-				image->of_offset, image->of_dest, DT_BLOB);
-		if (length == -1)
-			return -1;
+#ifdef CONFIG_OF_LIBFDT
+	length = update_image_length(&nand,
+			image->of_offset, image->of_dest, DT_BLOB);
+	if (length == -1)
+		return -1;
 
-		image->of_length = length;
+	image->of_length = length;
+
+	dbg_info("NAND: dt blob: Copy %d bytes from %d to %d\n",
+		image->of_length, image->of_offset, image->of_dest);
+
+	ret = nand_loadimage(&nand, image->of_offset,
+				image->of_length, image->of_dest);
+	if (ret)
+		return ret;
 #endif
-
-		dbg_info("NAND: dt blob: Copy %d bytes from %d to %d\n",
-			image->of_length, image->of_offset, image->of_dest);
-
-		ret = nand_loadimage(&nand, image->of_offset,
-					image->of_length, image->of_dest);
-		if (ret)
-			return ret;
-	}
 
 	return 0;
  }

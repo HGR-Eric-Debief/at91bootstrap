@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,9 @@ enum pio_type {
 	PIO_PERIPH_B,
 	PIO_PERIPH_C,
 	PIO_PERIPH_D,
+	PIO_PERIPH_E,
+	PIO_PERIPH_F,
+	PIO_PERIPH_G,
 	PIO_INPUT,
 	PIO_OUTPUT
 };

@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2012, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -432,16 +432,16 @@ hw_init(void)
 	 */
 
   /* Configure PLLA = MOSC * (PLL_MULA + 1) / PLL_DIVA */
-  pmc_cfg_plla(PLLA_SETTINGS, PLL_LOCK_TIMEOUT);
+	pmc_cfg_plla(PLLA_SETTINGS);
 
   /* Initialize PLLA charge pump */
   pmc_init_pll(AT91C_PMC_IPLLA_3);
 
 	/* Switch PCK/MCK on Main clock output */
-  pmc_cfg_mck(BOARD_PRESCALER_MAIN_CLOCK, PLL_LOCK_TIMEOUT);
+	pmc_cfg_mck(BOARD_PRESCALER_MAIN_CLOCK);
 
 	/* Switch PCK/MCK on PLLA output */
-  pmc_cfg_mck(BOARD_PRESCALER_PLLA, PLL_LOCK_TIMEOUT);
+	pmc_cfg_mck(BOARD_PRESCALER_PLLA);
 
 	/* Set GMAC & EMAC pins to output low */
 	at91_special_pio_output_low();
@@ -501,6 +501,20 @@ hw_init(void)
 }
 #endif /* #ifdef CONFIG_HW_INIT */
 
+char *board_override_cmd_line(void)
+{
+	char *cmdline = NULL;
+
+#if defined(CONFIG_LOAD_ANDROID)
+	/* Setup Android command-line */
+	if (get_dm_sn() == BOARD_ID_PDA_DM)
+		cmdline = CMDLINE " androidboot.hardware=sama5d3x-pda";
+	else
+		cmdline = CMDLINE " androidboot.hardware=sama5d3x-ek";
+#endif
+	return cmdline;
+}
+
 #ifdef CONFIG_DATAFLASH
 void
 at91_spi0_hw_init(void)
@@ -524,7 +538,8 @@ at91_spi0_hw_init(void)
 #endif /* #ifdef CONFIG_DATAFLASH */
 
 #ifdef CONFIG_SDCARD
-static void sdcard_set_of_name_board(char *of_name)
+#ifdef CONFIG_OF_LIBFDT
+void at91_board_set_dtb_name(char *of_name)
   {
     /* CPU TYPE*/
     switch (get_cm_sn())
@@ -555,10 +570,13 @@ static void sdcard_set_of_name_board(char *of_name)
       }
 
     if (get_dm_sn() == BOARD_ID_PDA_DM)
-    strcat(of_name, "_pda");
+		strcat(of_name, "_pda4");
+	else if (get_dm_sn() == BOARD_ID_PDA7_DM)
+		strcat(of_name, "_pda7");
 
     strcat(of_name, ".dtb");
   }
+#endif
 
 void at91_mci0_hw_init(void)
   {
@@ -584,9 +602,6 @@ void at91_mci0_hw_init(void)
 
     /* Enable the clock */
 	pmc_enable_periph_clock(AT91C_ID_HSMCI0);
-
-    /* Set of name function pointer */
-    sdcard_set_of_name = &sdcard_set_of_name_board;
   }
 #endif /* #ifdef CONFIG_SDCARD */
 

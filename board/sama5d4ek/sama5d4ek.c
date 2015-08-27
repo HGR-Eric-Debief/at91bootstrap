@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2012, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,27 +51,6 @@
 #include "act8865.h"
 #include "twi.h"
 
-#if defined(CONFIG_REDIRECT_ALL_INTS_AIC)
-static void redirect_interrupts_to_aic(void)
-{
-	unsigned int key32;
-
-	if (!(readl(SFR_AICREDIR + AT91C_BASE_SFR) & 0x01)) {
-		key32 = readl(SFR_SN1 + AT91C_BASE_SFR) ^ AICREDIR_KEY;
-		writel(((key32 & ~0x01) | 0x1), SFR_AICREDIR + AT91C_BASE_SFR);
-			/* bits[31:1] = key */
-			/* bit[0] = 1 => all interrupts redirected to AIC */
-			/* bit[0] = 0 => secure interrupts directed to SAIC,
-						others to AIC (default) */
-
-		if ((readl(SFR_AICREDIR + AT91C_BASE_SFR) & 0x01))
-			dbg_info("\nAll interupts redirected to AIC\n");
-	}
-}
-#else
-static void redirect_interrupts_to_aic(void) {}
-#endif
-
 static void at91_dbgu_hw_init(void)
 {
 	const struct pio_desc dbgu_pins[] = {
@@ -90,7 +69,11 @@ static void initialize_dbgu(void)
 	unsigned int baudrate = 115200;
 
 	at91_dbgu_hw_init();
-	usart_init(BAUDRATE(MASTER_CLOCK / 2, baudrate));
+
+	if (pmc_check_mck_h32mxdiv())
+		usart_init(BAUDRATE(MASTER_CLOCK / 2, baudrate));
+	else
+		usart_init(BAUDRATE(MASTER_CLOCK, baudrate));
 }
 
 #ifdef CONFIG_DDR2
@@ -183,6 +166,30 @@ static void ddramc_reg_config(struct ddramc_register *ddramc_config)
 			| AT91C_DDRC2_TXARDS_(2)
 			| AT91C_DDRC2_TXARD_(8));
 
+#elif defined(CONFIG_BUS_SPEED_200MHZ)
+
+	ddramc_config->rtr = 0x30e;
+
+	ddramc_config->t0pr = (AT91C_DDRC2_TRAS_(8)
+			| AT91C_DDRC2_TRCD_(3)
+			| AT91C_DDRC2_TWR_(3)
+			| AT91C_DDRC2_TRC_(11)
+			| AT91C_DDRC2_TRP_(3)
+			| AT91C_DDRC2_TRRD_(2)
+			| AT91C_DDRC2_TWTR_(2)
+			| AT91C_DDRC2_TMRD_(2));
+
+	ddramc_config->t1pr = (AT91C_DDRC2_TXP_(2)
+			| AT91C_DDRC2_TXSRD_(200)
+			| AT91C_DDRC2_TXSNR_(28)
+			| AT91C_DDRC2_TRFC_(26));
+
+	ddramc_config->t2pr = (AT91C_DDRC2_TFAW_(7)
+			| AT91C_DDRC2_TRTP_(2)
+			| AT91C_DDRC2_TRPA_(3)
+			| AT91C_DDRC2_TXARDS_(2)
+			| AT91C_DDRC2_TXARD_(8));
+
 #else
 #error "No CLK setting defined"
 #endif
@@ -202,6 +209,8 @@ static void ddramc_init(void)
 	/* configure Shift Sampling Point of Data */
 #if defined(CONFIG_BUS_SPEED_148MHZ)
 	reg = AT91C_MPDDRC_RD_DATA_PATH_NO_SHIFT;
+#elif defined(CONFIG_BUS_SPEED_200MHZ)
+	reg = AT91C_MPDDRC_RD_DATA_PATH_TWO_CYCLES;
 #else
 	reg = AT91C_MPDDRC_RD_DATA_PATH_ONE_CYCLES;
 #endif
@@ -226,7 +235,7 @@ static void ddramc_init(void)
 	/* DDRAM2 Controller initialize */
 	ddram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, &ddramc_reg);
 
-	ddramc_print_config_regs(AT91C_BASE_MPDDRC);
+	ddramc_dump_regs(AT91C_BASE_MPDDRC);
 }
 #endif /* #ifdef CONFIG_DDR2 */
 
@@ -653,18 +662,18 @@ void hw_init(void)
 	 * to be enabled PCK = MCK = MOSC
 	 */
 
+	/* Switch PCK/MCK on Main clock output */
+	pmc_cfg_mck(BOARD_PRESCALER_MAIN_CLOCK);
+
 	/* Configure PLLA = MOSC * (PLL_MULA + 1) / PLL_DIVA */
-	pmc_cfg_plla(PLLA_SETTINGS, PLL_LOCK_TIMEOUT);
+	pmc_cfg_plla(PLLA_SETTINGS);
 
 	/* Initialize PLLA charge pump */
 	/* not needed for SAMA5D4 */
 	pmc_init_pll(0);
 
 	/* Switch MCK on PLLA output */
-	pmc_cfg_mck(BOARD_PRESCALER_PLLA, PLL_LOCK_TIMEOUT);
-
-	/* Setup AHB 32-bit Matrix Divisor */
-	pmc_cfg_h32mxdiv(BOARD_H32MX, PLL_LOCK_TIMEOUT);
+	pmc_cfg_mck(BOARD_PRESCALER_PLLA);
 
 	/* Enable External Reset */
 	writel(AT91C_RSTC_KEY_UNLOCK | AT91C_RSTC_URSTEN,
@@ -684,9 +693,6 @@ void hw_init(void)
 
 	/* initialize the dbgu */
 	initialize_dbgu();
-
-	/* Redirect all interrupts to non-secure AIC */
-	redirect_interrupts_to_aic();
 
 #if defined(CONFIG_MATRIX)
 	matrix_read_slave_security();
@@ -732,10 +738,12 @@ void at91_spi0_hw_init(void)
 #endif /* #ifdef CONFIG_DATAFLASH */
 
 #ifdef CONFIG_SDCARD
-static void sdcard_set_of_name_board(char *of_name)
+#ifdef CONFIG_OF_LIBFDT
+void at91_board_set_dtb_name(char *of_name)
 {
 	strcpy(of_name, "sama5d4ek.dtb");
 }
+#endif
 
 void at91_mci0_hw_init(void)
 {
@@ -754,9 +762,6 @@ void at91_mci0_hw_init(void)
 	pio_configure(mci_pins);
 	pmc_enable_periph_clock(AT91C_ID_PIOE);
 	pmc_enable_periph_clock(AT91C_ID_HSMCI1);
-
-	/* Set of name function pointer */
-	sdcard_set_of_name = &sdcard_set_of_name_board;
 }
 #endif /* #ifdef CONFIG_SDCARD */
 

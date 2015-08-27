@@ -2,14 +2,14 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2012, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
  * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the disclaiimer below.
+ * this list of conditions and the disclaimer below.
  *
  * Atmel's name may not be used to endorse or promote products derived from
  * this software without specific prior written permission.
@@ -210,6 +210,9 @@ static int of_get_nextnode_offset(void *blob,
 	unsigned int token;
 	int ret;
 
+	if (!offset || !nextoffset || !depth)
+		return -1;
+
 	while(1) {
 		ret = of_get_token_nextoffset(blob, nodeoffset,
 						&next_offset, &token);
@@ -218,8 +221,7 @@ static int of_get_nextnode_offset(void *blob,
 
 		if (token == OF_DT_TOKEN_NODE_BEGIN) {
 			/* find the node start token */
-			if (depth)
-				(*depth)++;
+			(*depth)++;
 
 			break;
 		} else {
@@ -229,8 +231,8 @@ static int of_get_nextnode_offset(void *blob,
 				|| (token == OF_DT_TOKEN_NOP))
 				continue;
 			else if (token == OF_DT_TOKEN_NODE_END) {
-				if (depth)
-					(*depth)--;
+				(*depth)--;
+
 				if ((*depth) < 0)
 					return -1; /* not found */
 			} else if (token == OF_DT_END)
