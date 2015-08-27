@@ -394,7 +394,6 @@ endif
 	@echo $(LDFLAGS) && echo
 	@echo ======
 	@echo Sources : $(SRCS) && echo
-	@echo Objets : $(OBJS) && echo
 	@echo ======
 	@echo Boot name : $(BOOT_NAME)
 	
