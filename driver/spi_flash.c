@@ -45,13 +45,11 @@
 
 /* Manufacturer Device ID Read */
 #define CMD_READ_DEV_ID			0x9f
-/* Continuous Array Read */
-#define CMD_READ_ARRAY_FAST		0x0b
 
 /* JEDEC Code */
 #define MANUFACTURER_ID_ATMEL		0x1f
 
-/* AT45 and T25/AT26 MAX freq for Slow read array command (Hz)*/
+/* AT45 and AT25/AT26 MAX freq for Slow read array command (Hz)*/
 #define ATMEL_DF_SPI_MAX_FREQ_SLOW_READ 33000000
 
 /* Family Code */
