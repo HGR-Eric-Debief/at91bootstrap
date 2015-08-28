@@ -324,24 +324,22 @@ link_script:=elf32-littlearm.lds
 endif
 
 # Linker flags.
+#Thumb mode or DEBUG build (-O0) need some libgcc support functions.
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to map file
 #  -lc 	   : 	tells the linker to tie in newlib
-#  -lgcc   : 	tells the linker to tie in newlib
+#  -lgcc   : 	tells the linker to tie in libgcc
 # -L$(shell dirname `$(CC) --print-libgcc-file-name`) : got the libgcc file path.
 LDFLAGS+=-nostartfiles -Map=$(BINDIR)/$(BOOT_NAME).map --cref -static
 LDFLAGS+=-T $(link_script) $(GC_SECTIONS) -Ttext $(LINK_ADDR)
+LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`)
+LIBS+=-lgcc
 
 ifneq ($(DATA_SECTION_ADDR),)
 LDFLAGS+=-Tdata $(DATA_SECTION_ADDR)
 endif
 
-#Thumb mode need some libgcc support functions.
-ifeq ($(CONFIG_THUMB),y)
-LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`)
-LIBS+=-lgcc
-endif
 
 gccversion := $(shell expr `$(CC) -dumpversion`)
 
