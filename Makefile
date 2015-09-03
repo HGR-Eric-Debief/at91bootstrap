@@ -300,13 +300,10 @@ ASFLAGS=-Wall -I$(INCL) -Iinclude
 ifeq ($(CONFIG_BUILD_RELEASE),y)
 ## debug Release
 CPPFLAGS += -Os
-ASFLAGS += -Os
 #Fake RELEASE => DEBUG from startup.
 #CPPFLAGS += -g -Os
-#ASFLAGS += -g -Os
 else
-CPPFLAGS += -g -g3 -O0
-ASFLAGS += -g -O0
+CPPFLAGS += -g3 -O0
 endif
 
 include	toplevel_cpp.mk
