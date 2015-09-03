@@ -644,7 +644,7 @@ static int df_at45_desc_init(struct dataflash_descriptor *df_desc)
 	default:
 		return -1;
 	}
-
+  df_desc->max_spi_freq_slow_read = ATMEL_DF_SPI_MAX_FREQ_SLOW_READ;
 	return 0;
 }
 
@@ -656,7 +656,7 @@ static int df_at25_desc_init(struct dataflash_descriptor *df_desc)
 	df_desc->pages = 16384;
 	df_desc->page_size = 256;
 	df_desc->page_offset = 0;
-
+  df_desc->max_spi_freq_slow_read = ATMEL_DF_SPI_MAX_FREQ_SLOW_READ;
 	return 0;
 }
 
@@ -714,6 +714,7 @@ dataflash_probe_chip(struct dataflash_descriptor *df_desc)
       return -1;
     }
   ret = df_desc_init(df_desc, (dev_id[1] & 0xe0));
+  
 #else
 #warning Use SPI Flash Parameters from CONFIGURATION
    df_desc->family = 0;
