@@ -17,7 +17,7 @@ config CONFIG_DDRC
   bool
   default n
   help
-    Initialize DDR-2/-1 SDRAM controller before copying
+    Initialize DDR-3/-2 SDRAM controller before copying
 
 
 config  ALLOW_DATAFLASH
