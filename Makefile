@@ -25,7 +25,8 @@ BINDIR:=$(TOPDIR)/binaries
 
 
 DATE := $(shell date --rfc-3339=seconds)
-REVISION := alpha5
+VERSION := BeeAVE
+REVISION := alpha1
 SCMINFO := $(shell ($(TOPDIR)/host-utilities/setlocalversion $(TOPDIR)))
 
 ifeq ($(SCMINFO),)
@@ -122,9 +123,18 @@ OBJCOPY=$(CROSS_COMPILE)objcopy
 OBJDUMP=$(CROSS_COMPILE)objdump
 
 PROJECT := $(strip $(subst ",,$(CONFIG_PROJECT)))
+
+ifeq ($(CONFIG_LOAD_BEEAVE),y)
+#BeeAVE specific parameters
+IMG_ADDRESS := 0x10000
+IMG_SIZE := 0x100000
+JUMP_ADDR := 0x20000000
+else
 IMG_ADDRESS := $(strip $(subst ",,$(CONFIG_IMG_ADDRESS)))
 IMG_SIZE := $(strip $(subst ",,$(CONFIG_IMG_SIZE)))
 JUMP_ADDR := $(strip $(subst ",,$(CONFIG_JUMP_ADDR)))
+endif
+
 OF_OFFSET := $(strip $(subst ",,$(CONFIG_OF_OFFSET)))
 OF_ADDRESS := $(strip $(subst ",,$(CONFIG_OF_ADDRESS)))
 BOOTSTRAP_MAXSIZE := $(strip $(subst ",,$(CONFIG_BOOTSTRAP_MAXSIZE)))
@@ -184,6 +194,10 @@ endif
 
 ifeq ($(CONFIG_DDR2),y)
 REVISION :=$(REVISION)-DDR2
+endif
+
+ifeq ($(CONFIG_DDR3),y)
+REVISION :=$(REVISION)-DDR3
 endif
 
 #LP-DDR1 : only known chips
@@ -254,6 +268,10 @@ TARGET_NAME:=$(basename $(IMAGE_NAME))
 endif
 
 ifeq ($(CONFIG_LOAD_4MB), y)
+TARGET_NAME:=$(basename $(IMAGE_NAME))
+endif
+
+ifeq ($(CONFIG_LOAD_BEEAVE), y)
 TARGET_NAME:=$(basename $(IMAGE_NAME))
 endif
 

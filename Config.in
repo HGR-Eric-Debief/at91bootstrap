@@ -103,7 +103,13 @@ config CONFIG_LOAD_64KB
 	help
 	  Use this mode to load an embedded application
 	  which can have max 64 kB Size
-
+	  
+config CONFIG_LOAD_BEEAVE
+  bool "Load the BeeAVE Firmware from the SPI NOR Flash"
+  #depends on CONFIG_BEEAVE - TODO : set this flags in BeeAVE module default configuration.
+  help
+     Use this to set the BeeAVE Firmware download.
+  
 endchoice
 
 config CONFIG_LINUX_IMAGE
@@ -127,13 +133,19 @@ source "Config.in.u-boot"
 #
 source "Config.in.app-image"
 
+#
+# BeeAVE Firmware
+#
+source "Config.in.beeave"
+
 config CONFIG_IMAGE_NAME
 	string
 	default "Image" if CONFIG_LINUX_IMAGE
 	default "u-boot.bin" if CONFIG_LOAD_UBOOT
 	default "softpack.bin" if CONFIG_LOAD_64KB || CONFIG_LOAD_4MB || CONFIG_LOAD_1MB
+	default "fw.bin" if CONFIG_LOAD_BEEAVE
 	help
-    the file loaded from the SDCARD as the third level bootloader.
+    the binary file loaded from the persistant memory (SDCARD, NAND or NOR Flash) as the third level bootloader or application
 
 config CONFIG_NO_CONSOLE_OUTPUT
   bool "NO DBGU console output"
