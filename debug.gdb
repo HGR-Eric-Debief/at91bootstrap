@@ -4,3 +4,4 @@ file binaries/at91bootstrap.elf
 load
 break main
 break load_dataflash
+break df_send_command
