@@ -35,7 +35,7 @@
 
 /**
  * This file contains the ddram_chip_config() and ddram_chip_get_ba_offset() functions definitions 
- * for the Winbond WD948D4 LP-DDR1 (4 bank (2 bits) X 4096 rows (12 bits) X 512 columns (9 bits) words of 32 bits) memory chip
+ * for the Winbond WD948D2 LP-DDR1 (4 bank (2 bits) X 4096 rows (12 bits) X 512 columns (9 bits) words of 32 bits) memory chip
  */
 
 //! Define the BA offset in interleaved mode (@see ddram_chip_get_ba_offset() )
