@@ -28,6 +28,7 @@
 #ifndef __AT91_SFR_H__
 #define __AT91_SFR_H__
 
+#define SFR_DDRCFG 0x04 /* DDR Configuration Register */
 #define SFR_OHCXIICR	0x10	/* OHCI Interrupt Configuration Register */
 #define SFR_OHCIISR	0x14	/* OHCI Interrupt Status Register */
 /* Reserved */
@@ -65,5 +66,9 @@
 #define AT91C_EBICFG_BMS	(0x01 << 16)
 #define		AT91C_EBICFG_BMS_ROM		(0x00 << 16)
 #define		AT91C_EBICFG_BMS_EBI		(0x01 << 16)
+
+/* --- SFR_DDRCFG: (offset 0x04) : DDR Configuration Register ---- */
+#define AT91C_DDRCFG_FDQIEN     (1<<16)
+#define AT91C_DDRCFG_FDQSIEN    (1<<17)
 
 #endif /* #ifndef __AT91_SFR_H__ */

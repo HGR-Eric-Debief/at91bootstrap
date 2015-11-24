@@ -96,6 +96,11 @@
 #include "sama5d2_xplained.h"
 #endif
 
+#ifdef CONFIG_SAMA5D2_PROTO888A
+#include "sama5d2_proto888A.h"
+#endif
+
+
 /*
  * Functions Prototype
  */
