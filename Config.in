@@ -175,16 +175,14 @@ config CONFIG_DEBUG_VERY_LOUD
 endchoice
 
 menu "LED debugging ..."
-depends on CONFIG_SAMA5D31_BEEAVE
+depends on CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A
 config CONFIG_BEEAVE_WITH_DEBUG_LEDS
   bool "DEBUG Leds are presents"
-  depends on CONFIG_SAMA5D31_BEEAVE
   help
     DEBUG Red/Green leds are on the board
 
 choice 
  prompt "DEBUG led init status"
- depends on CONFIG_BEEAVE_WITH_DEBUG_LEDS
  
 config CONFIG_BEEAVE_DEBUG_LEDS_OFF
   bool "OFF"

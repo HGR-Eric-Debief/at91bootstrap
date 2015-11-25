@@ -56,23 +56,24 @@ void  ddramc_init(void);
 #error BeeAve module only support LP-DDR1 RAM.
 #endif
 
-#if defined(CONFIG_PROTO888A_WITH_DEBUG_LEDS)
-//! This function will initialize the DEBUG LEDS of the BeeAve module : set them GREEN:RED:GREEN to see Bootstrap running.
+#if defined(CONFIG_BEEAVE_WITH_DEBUG_LEDS)
+//! This function will initialize the DEBUG LEDS of the BeeAve module : set them GREEN:NONE:ORANGE to see Bootstrap running.
+// Note : 0 : ON, 1 : OFF
 void debug_leds_init(void)
 {
-#ifdef CONFIG_PROTO888A_DEBUG_LEDS_ON
+#ifdef CONFIG_BEEAVE_DEBUG_LEDS_ON
   const struct pio_desc debug_led_pio[] =
     {
       { "GREEN_LED_1", AT91C_PIN_PD(17), 0, PIO_DEFAULT, PIO_OUTPUT },
-      { "RED_LED_1", AT91C_PIN_PD(18), 0, PIO_DEFAULT, PIO_INPUT },
+      { "RED_LED_1", AT91C_PIN_PD(18), 1, PIO_DEFAULT, PIO_OUTPUT },
       { "GREEN_LED_2", AT91C_PIN_PD(23), 0, PIO_DEFAULT, PIO_OUTPUT },
       { "RED_LED_2", AT91C_PIN_PD(24), 0, PIO_DEFAULT, PIO_OUTPUT },
       { "GREEN_LED_3", AT91C_PIN_PD(19), 0, PIO_DEFAULT, PIO_OUTPUT },
-      { "RED_LED_3", AT91C_PIN_PD(20), 0, PIO_DEFAULT, PIO_INPUT },
+      { "RED_LED_3", AT91C_PIN_PD(20), 0, PIO_DEFAULT, PIO_OUTPUT },
       PIO_DESCRIPTION_END };
-#endif /*CONFIG_PROTO888A_DEBUG_LEDS_ON*/
+#endif /*CONFIG_BEEAVE_DEBUG_LEDS_ON*/
 
-#ifdef CONFIG_PROTO888A_DEBUG_LEDS_OFF
+#ifdef CONFIG_BEEAVE_DEBUG_LEDS_OFF
 #warning DEBUG LED OFF.
 const struct pio_desc debug_led_pio[] =
     {
@@ -83,7 +84,7 @@ const struct pio_desc debug_led_pio[] =
       { "GREEN_LED_3", AT91C_PIN_PD(19), 0, PIO_DEFAULT, PIO_INPUT },
       { "RED_LED_3", AT91C_PIN_PD(20), 0, PIO_DEFAULT, PIO_INPUT },
       PIO_DESCRIPTION_END };
-#endif /*CONFIG_PROTO888A_DEBUG_LEDS_OFF*/
+#endif /*CONFIG_BEEAVE_DEBUG_LEDS_OFF*/
 
   pmc_enable_periph_clock(AT91C_ID_PIOD);
   pio_configure(debug_led_pio);
@@ -91,9 +92,9 @@ const struct pio_desc debug_led_pio[] =
 #else
 //Nothing to do
 #define debug_leds_init() 
-#endif /*#if defined(CONFIG_PROTO888A_WITH_DEBUG_LEDS)*/
+#endif /*#if defined(CONFIG_BEEAVE_WITH_DEBUG_LEDS)*/
 //*********************************************************
-//! This function will init the LIGHTING LED (WHITE) of the BeeAve module : leave it OFF.
+//! This function will init the LIGHTING LED (WHITE) of the Proto888A module : leave it OFF.
 void lighting_led_init(void)
 {
   const struct pio_desc lighting_led_pio[] =
@@ -314,7 +315,7 @@ static int matrix_init(void)
 #ifdef CONFIG_HW_INIT
 void hw_init(void)
 {
-#if defined(CONFIG_WITH_MMU)
+  #if defined(CONFIG_WITH_MMU)
   struct ExtMemDescriptor memDescriptor =
     {
       CONFIG_EBI_0_SIZE,
@@ -323,7 +324,7 @@ void hw_init(void)
       CONFIG_EBI_3_SIZE,
       CONFIG_RAM_SIZE};
 #endif
-  
+
 	/* Disable watchdog */
 	at91_disable_wdt();
 
@@ -395,7 +396,7 @@ void at91_spi0_hw_init(void)
 #endif
 
 	pio_configure(spi_pins);
-
+  
 	pmc_sam9x5_enable_periph_clk(AT91C_ID_SPI1);
 }
 #endif
