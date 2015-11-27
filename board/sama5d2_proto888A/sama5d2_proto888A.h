@@ -109,4 +109,8 @@
 #error NO SDHC used in proto 888A
 #endif
 
+/*
+ * MMU Table storage : 16kb (4096 descriptors(32bits)) at the end of the SRAM1 area
+ */
+#define MEMORY_TRANSLATION_TABLE_BASE_ADDR (0x220000 - (16 * 1024))
 #endif

@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
- *         ATMEL Microcontroller Software Support
+ *         SAM Software Package License
  * ----------------------------------------------------------------------------
- * Copyright (c) 2012, Atmel Corporation
-
+ * Copyright (c) 2013, Atmel Corporation
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,37 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ----------------------------------------------------------------------------
  */
-#ifndef MMU_H_
-#define MMU_H_
+
+/**
+ * \file
+ *
+ * Interface for memories configuration on board.
+ *
+ */
+
+#ifndef BOARD_MEMORIES_H
+#define BOARD_MEMORIES_H
+
+/*----------------------------------------------------------------------------
+ *        Headers
+ *----------------------------------------------------------------------------*/
 
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+/*----------------------------------------------------------------------------
+ *        Exported Types
+ *----------------------------------------------------------------------------*/
 
 /**
  * This structure give the size of each of the external memories EBIi and DDRCS
  * @note all the sizes are in MEGA BYTES !!!
+ * @todo the external memory descriptor should be more than a size. It could have all the parameters for fine tuning.
  */
 struct ExtMemDescriptor
 {
@@ -43,28 +65,19 @@ struct ExtMemDescriptor
   unsigned int DDRCSSize;
 };
 
-/**
- * @brief This function will set the given translation Table into the MMU.
- * @param pTB [IN] The translation table pointer. (short descriptor). No actual Translation.
- */
-void MMU_Set (unsigned int* pTB);
+/*----------------------------------------------------------------------------
+ *        Functions
+ *----------------------------------------------------------------------------*/
 
 /**
- * \brief Initializes a MMU memory mapping, no translation activated according to the size of each external memories areas (EBI, DDRAM)
- * @param pDesc [IN] : external memory descriptor
- * \param pTB  [IN,OUT] : Address of the translation table.
- * @todo The external memories sizes should be checked !!
+ * \brief Setup TLB for the board according to the given descriptor
  */
-void MMU_TB_Initialize(struct ExtMemDescriptor* pDesc, unsigned int *pTB);
+extern void board_setup_tlb_with_desc(struct ExtMemDescriptor* pDesc, unsigned int *tlb);
 
-/**
- * \brief Initializes the memory translation table & set the MMU with it.
- * \param pTB  Address of the translation table.
- * @deprecated use MMU_TB_Initialize() and MMU_Set() instead
- */
-void MMU_Initialize(unsigned int *pTB);
 
-//! The Memory descriptor table is defined in the target's description file in the board/target directory.
-extern unsigned int* MEMORY_TRANSLATION_TABLE_BASE;
+#ifdef __cplusplus
+}
+#endif
 
-#endif /*MMU_H_*/
+
+#endif  /* BOARD_MEMORIES_H */

@@ -47,6 +47,13 @@
 #include "arch/tz_matrix.h"
 #include "matrix.h"
 
+#if defined(CONFIG_WITH_MMU)
+#include "cp15.h"
+#include "mmu.h"
+#include "board_memories.h"
+#endif
+
+
 //*************** MEMORY functions initialization prototypes ******
 
 #ifdef CONFIG_LPDDR1
@@ -311,6 +318,9 @@ static int matrix_init(void)
 }
 #endif	/* #if defined(CONFIG_MATRIX) */
 
+#if defined(CONFIG_WITH_MMU)
+unsigned int* MEMORY_TRANSLATION_TABLE_BASE = (unsigned int*) MEMORY_TRANSLATION_TABLE_BASE_ADDR;
+#endif
 
 #ifdef CONFIG_HW_INIT
 void hw_init(void)
@@ -362,7 +372,6 @@ void hw_init(void)
 
 	/* Init timer */
 	timer_init();
-CONFIG_DRAM:
 #ifdef CONFIG_DDRC
   /* Initialize MPDDR Controller */
 	ddramc_init();
@@ -375,6 +384,37 @@ CONFIG_DRAM:
   lighting_led_init();
   debug_leds_init();
 
+#if defined(CONFIG_WITH_MMU)
+#warning MMU activated
+  mmu_tb_initialize(&memDescriptor, MEMORY_TRANSLATION_TABLE_BASE);
+  mmu_set(MEMORY_TRANSLATION_TABLE_BASE);
+  cp15_enable_mmu();
+#if defined(CONFIG_WITH_CACHE)
+#warning CACHE activated
+  cp15_enable_dcache();
+  cp15_enable_icache();
+#endif /*CONFIG_CACHE_ENABLED*/
+#endif
+
+#if defined(CONFIG_WITH_MMU)
+//Check MMU & Cache status
+  if (cp15_is_mmu_enabled())
+    usart_puts("MMU ENabled\r");
+  else
+    usart_puts("MMU DISabled\r");
+
+  if (cp15_is_dcache_enabled())
+    usart_puts("D Cache ENabled\r");
+  else
+    usart_puts("D Cache DISabled\r");
+
+  if (cp15_is_icache_enabled())
+    usart_puts("I Cache ENabled\r");
+  else
+    usart_puts("I Cache DISabled\r");
+#endif
+
+  
 }
 #endif /* #ifdef CONFIG_HW_INIT */
 

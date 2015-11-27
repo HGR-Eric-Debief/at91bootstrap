@@ -168,6 +168,9 @@ int ddram_initialize(unsigned int base_address,
 	 */
 	write_ddramc(base_address, HDDRSDRC2_RTR, ddramc_config->rtr);
 
+  //Remove the unused compiler warning
+  reg_val = reg_val;
+  
 	return 0;
 }
 
