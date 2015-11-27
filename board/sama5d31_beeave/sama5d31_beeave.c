@@ -148,6 +148,9 @@ initialize_dbgu(void)
 	usart_init(BAUDRATE(MASTER_CLOCK, 115200));
 }
 
+#if defined(CONFIG_WITH_MMU)
+unsigned int* MEMORY_TRANSLATION_TABLE_BASE = (unsigned int*) MEMORY_TRANSLATION_TABLE_BASE_ADDR;
+#endif
 
 #ifdef CONFIG_HW_INIT
 void
@@ -213,8 +216,8 @@ lighting_led_init();
 
 #if defined(CONFIG_WITH_MMU)
 #warning MMU activated
-  MMU_TB_Initialize(&memDescriptor, &MEMORY_TRANSLATION_TABLE_BASE);
-  MMU_Set(&MEMORY_TRANSLATION_TABLE_BASE);
+  MMU_TB_Initialize(&memDescriptor, MEMORY_TRANSLATION_TABLE_BASE);
+  MMU_Set(MEMORY_TRANSLATION_TABLE_BASE);
   CP15_EnableMMU();
 #if defined(CONFIG_WITH_CACHE)
 #warning CACHE activated

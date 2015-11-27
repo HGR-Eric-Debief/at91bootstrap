@@ -226,6 +226,11 @@
  */
 #define CONFIG_SYS_ONE_WIRE_PIN		AT91C_PIN_PE(25)
 
+/*
+ * MMU Table storage : 16kb (4096 descriptors(32bits)) at the end of the SRAM1 area
+ */
+#define MEMORY_TRANSLATION_TABLE_BASE_ADDR (0x320000 - 0x4000)
+
 /* function */
 extern void hw_init(void);
 
