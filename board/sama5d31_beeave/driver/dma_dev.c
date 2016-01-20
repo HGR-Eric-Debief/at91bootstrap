@@ -38,13 +38,13 @@
 #include <stdbool.h>
 #include "hardware.h"
 #include "dma_hardware_interface.h"
-#include "dma_dev.h"
-#include "arch/at91_spi.h"
 #include "spi.h"
-#include "dmad.h"
 #include "gpio.h"
 #include "usart.h"
 #include "debug.h"
+#include "dma_dev.h"
+#include "arch/at91_spi.h"
+#include "driver/dmad.h"
 
 //! DMA_DEV_WITH_DMA_IRQ Will be set when IRQ support will be needed and set (IRQ stack in startup code)
 #define NO_DMA_DEV_WITH_DMA_IRQ

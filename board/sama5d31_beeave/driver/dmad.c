@@ -61,7 +61,7 @@
  *----------------------------------------------------------------------------*/
 #include "hardware.h"
 #include "board.h"
-#include "dmad.h"
+#include "driver/dmad.h"
 #include "debug.h"
 #include "dma_hardware_interface.h"
 #include "arch/at91_pmc.h"
