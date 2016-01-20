@@ -49,21 +49,17 @@ static const unsigned int BA_OFFSET_WHEN_SEQUENTIAL = 23;
 void ddram_chip_config(struct ddramc_register *ddramc_config)
 {
   ddramc_config->mdr = (AT91C_DDRC2_DBW_32_BITS | AT91C_DDRC2_MD_LP_DDR_SDRAM);
-#if 0
-  ddramc_config->cr = (AT91C_DDRC2_NC_DDR9_SDR8 | AT91C_DDRC2_NR_12
-      | AT91C_DDRC2_CAS_3
-      | AT91C_DDRC2_ENRDM_ENABLE /* Phase error correction is enabled */
-      | AT91C_DDRC2_NB_BANKS_4 /* Only 4 banks*/
-      | AT91C_DDRC2_DECOD_INTERLEAVED /* Interleaved decoding */
-      | AT91C_DDRC2_UNAL_SUPPORTED); /* Unaligned access is supported */
-#else
+
   ddramc_config->cr = (AT91C_DDRC2_NC_DDR10_SDR9 | AT91C_DDRC2_NR_12
       | AT91C_DDRC2_CAS_3
-      | AT91C_DDRC2_ENRDM_ENABLE /* Phase error correction is enabled */
       | AT91C_DDRC2_NB_BANKS_4 /* Only 4 banks*/
-      | AT91C_DDRC2_DECOD_INTERLEAVED /* Interleaved decoding */
-      | AT91C_DDRC2_UNAL_UNSUPPORTED); /* Unaligned access is NOT supported  !! */
-#endif
+      | AT91C_DDRC2_ENRDM_DISABLE /* Phase error correction is disabled */
+      | AT91C_DDRC2_DECOD_INTERLEAVED /* decoding */
+      | AT91C_DDRC2_DIS_DLL_ENABLED /* DLL disabled */
+      | AT91C_DDRC2_OCD_EXIT /* OCD calibration kept */
+      | AT91C_DDRC2_DQMS_NOT_SHARED /* DQMS not shared */
+      | AT91C_DDRC2_UNAL_SUPPORTED); /* unaligned access is supported, needed for bus use optimization*/
+
 #if defined(CONFIG_BUS_SPEED_166MHZ)
  /*
   * The LPDDR1-SDRAM device requires a refresh of all rows every 64ms.
@@ -83,12 +79,13 @@ void ddram_chip_config(struct ddramc_register *ddramc_config)
 
   ddramc_config->t1pr = (AT91C_DDRC2_TXP_(1)  /* 1 * 6 = 6ns, 1 clock cycle */
       | AT91C_DDRC2_TXSR(20)    /* LP-DDR1 : use tXSR value  20 * 6 = 120 ns*/
-      | AT91C_DDRC2_TRFC_(12));   /* 72ns =>  12 * 6 = 72 ns */
-      
+      | AT91C_DDRC2_TXSNR_(20)    /* LP-DDR1 : use tXSR value  20 * 6 = 120 ns*/
+      | AT91C_DDRC2_TRFC_(12));   /* 72ns =>  12 * 6 = 72 ns */  
+  
    //Low power feature, NONE for the moment.
-    ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_NOLOWPOWER | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
+    //ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_NOLOWPOWER | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
     //!@note Lowpower mode must be tested once the application is operationnal : Memory will be less used than when set under tests.
-//ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_SELFREFRESH | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(3);
+    ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_SELFREFRESH | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
 #else
 #error Proto888A board bus speed is 166MHz !
 #endif

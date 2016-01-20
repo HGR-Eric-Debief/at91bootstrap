@@ -64,24 +64,34 @@ void ddramc_init(void)
   
   ddram_chip_config(&ddramc_reg);
 
-  /* enable DDR clock */
+  /* enable MPDDRC/DDR chip clocks */
   pmc_enable_periph_clock(AT91C_ID_MPDDRC);
   pmc_enable_system_clock(AT91C_PMC_DDR);
-
-  /* MPDDRC I/O Calibration Register */
+  
+  /* MPDDRC I/O Calibration Register with DDRCK=166MHz, before MPDDRC configuration */
+#if 0
   reg = readl(AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR);
   reg &= ~AT91C_MPDDRC_RDIV;
   reg |= AT91C_MPDDRC_RDIV_DDR2_RZQ_50;
   reg &= ~AT91C_MPDDRC_TZQIO;
   reg |= AT91C_MPDDRC_TZQIO_(100);
   reg |= AT91C_MPDDRC_ENABLE_CALIB;
+#else
+  reg = 0;
+  reg |= AT91C_MPDDRC_RDIV_DDR2_RZQ_50;
+  reg |= AT91C_MPDDRC_TZQIO_(100);
+  reg |= AT91C_MPDDRC_ENABLE_CALIB;
+#endif
   writel(reg, (AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR));
 
   writel(AT91C_MPDDRC_RD_DATA_PATH_TWO_CYCLES,
       (AT91C_BASE_MPDDRC + MPDDRC_RD_DATA_PATH));
-
+  
   /* LP-DDRAM1 Controller initialization */
   ddram_initialize(AT91C_BASE_MPDDRC, AT91C_BASE_DDRCS, &ddramc_reg);
   
   ddramc_dump_regs(AT91C_BASE_MPDDRC);
+  
+  //DDR_DQS/DDR_DQ controlled by the MPDDRC
+  writel(0, SFR_DDRCFG + AT91C_BASE_SFR);
 }
