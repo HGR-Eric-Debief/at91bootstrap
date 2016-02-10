@@ -39,12 +39,15 @@
 #include "arch/at91_pmc.h"
 #include "arch/at91_rstc.h"
 #include "arch/at91_pio.h"
+#include "arch/at91_sfr.h"
+#include "arch/tz_matrix.h"
+
 #include "sama5d2_proto888A.h"
 
 #include "l2cc.h"
 #include "act8865.h"
 #include "twi.h"
-#include "arch/tz_matrix.h"
+
 #include "matrix.h"
 
 #if defined(CONFIG_WITH_MMU)
@@ -106,7 +109,7 @@ void lighting_led_init(void)
 {
   const struct pio_desc lighting_led_pio[] =
     {
-      { "LED_SCENE", AT91C_PIN_PD(5), 0, PIO_DEFAULT, PIO_OUTPUT },
+      { "LED_SCENE", PROTO888A_PIO_LED_SCENE, 0, PIO_DEFAULT, PIO_OUTPUT },
       PIO_DESCRIPTION_END };
 
   pmc_enable_periph_clock(AT91C_ID_PIOD);
@@ -115,16 +118,16 @@ void lighting_led_init(void)
 //*********************************************************
 static void at91_dbgu_hw_init(void)
 {
-	const struct pio_desc dbgu_pins[] = {
-		{"URXD1", AT91C_PIN_PD(2), 0, PIO_DEFAULT, PIO_PERIPH_A},
-		{"UTXD1", AT91C_PIN_PD(3), 0, PIO_DEFAULT, PIO_PERIPH_A},
-		PIO_DESCRIPTION_END,
-	};
+        const struct pio_desc dbgu_pins[] = {
+                {"URXD1", AT91C_PIN_PD(2), 0, PIO_DEFAULT, PIO_PERIPH_A},
+                {"UTXD1", AT91C_PIN_PD(3), 0, PIO_DEFAULT, PIO_PERIPH_A},
+                PIO_DESCRIPTION_END,
+        };
 
-	pio_configure(dbgu_pins);
-	pmc_sam9x5_enable_periph_clk(AT91C_ID_UART1);
+        pio_configure(dbgu_pins);
+        pmc_sam9x5_enable_periph_clk(DBGU_ID_UART);
 }
-
+//*********************************************************
 static void initialize_dbgu(void)
 {
 	unsigned int baudrate = 57600;
@@ -377,7 +380,8 @@ void hw_init(void)
 	ddramc_init();
 #endif
   
-	/* Prepare L2 cache setup */
+	/* SRAM1 is used as fast RAM, not as a cache */
+  //writel(0x0, SFR_L2CC_HRAMC + AT91C_BASE_SFR);
 	l2cache_prepare();
   
   //LED init
@@ -422,21 +426,18 @@ void hw_init(void)
 #if defined(CONFIG_SPI)
 void at91_spi0_hw_init(void)
 {
-
 #if defined(CONFIG_SPI_BUS1) && defined(CONFIG_SPI1_IOSET_3)
 	const struct pio_desc spi_pins[] = {
-		{"SPI1_SPCK",	AT91C_PIN_PD(25), 0, PIO_DEFAULT, PIO_PERIPH_A},
-		{"SPI1_MOSI",	AT91C_PIN_PD(26), 0, PIO_DEFAULT, PIO_PERIPH_A},
-		{"SPI1_MISO",	AT91C_PIN_PD(27), 0, PIO_DEFAULT, PIO_PERIPH_A},
-		{"SPI1_NPCS",	AT91C_PIN_PD(28), 1, PIO_DEFAULT, PIO_OUTPUT},
+		{"SPI1_SPCK",	AT91C_PIN_PD(25), 0, PIO_DRVSTR, PIO_PERIPH_A},
+		{"SPI1_MOSI",	AT91C_PIN_PD(26), 0, PIO_DRVSTR, PIO_PERIPH_A},
+		{"SPI1_MISO",	AT91C_PIN_PD(27), 0, PIO_DRVSTR, PIO_PERIPH_A},
+		{"SPI1_NPCS",	AT91C_PIN_PD(28), 1, PIO_DRVSTR, PIO_OUTPUT},
 		PIO_DESCRIPTION_END,
-	};
+  };
 #else
 #error "Only SPI1 on IOSet 3 used !!!"
 #endif
-
 	pio_configure(spi_pins);
-  
 	pmc_sam9x5_enable_periph_clk(AT91C_ID_SPI1);
 }
 #endif
@@ -444,15 +445,14 @@ void at91_spi0_hw_init(void)
 #if defined (CONFIG_QSPI)
 void at91_qspi_hw_init(void)
 {
-
 #if defined(CONFIG_QSPI_BUS1) && defined(CONFIG_QSPI1_IOSET_2)
 	const struct pio_desc qspi_pins[] = {
-		{"QSPI1_SCK",	AT91C_PIN_PB(5),  0, PIO_DEFAULT, PIO_PERIPH_D},
-		{"QSPI1_CS",	AT91C_PIN_PB(6),  0, PIO_DEFAULT, PIO_PERIPH_D},
-		{"QSPI1_IO0",	AT91C_PIN_PB(7),  0, PIO_DEFAULT, PIO_PERIPH_D},
-		{"QSPI1_IO1",	AT91C_PIN_PB(8),  0, PIO_DEFAULT, PIO_PERIPH_D},
-		{"QSPI1_IO2",	AT91C_PIN_PB(9),  0, PIO_DEFAULT, PIO_PERIPH_D},
-		{"QSPI1_IO3",	AT91C_PIN_PB(10), 0, PIO_DEFAULT, PIO_PERIPH_D},
+		{"QSPI1_SCK",	AT91C_PIN_PB(5),  0, PIO_DRVSTR, PIO_PERIPH_D},
+		{"QSPI1_CS",	AT91C_PIN_PB(6),  0, PIO_DRVSTR, PIO_PERIPH_D},
+		{"QSPI1_IO0",	AT91C_PIN_PB(7),  0, PIO_DRVSTR, PIO_PERIPH_D},
+		{"QSPI1_IO1",	AT91C_PIN_PB(8),  0, PIO_DRVSTR, PIO_PERIPH_D},
+		{"QSPI1_IO2",	AT91C_PIN_PB(9),  0, PIO_DRVSTR, PIO_PERIPH_D},
+		{"QSPI1_IO3",	AT91C_PIN_PB(10), 0, PIO_DRVSTR, PIO_PERIPH_D},
 		PIO_DESCRIPTION_END,
 	};
 #else
@@ -464,3 +464,16 @@ void at91_qspi_hw_init(void)
 }
 #endif
 #endif
+
+//********************************************************
+void signal_invalid_application(void)
+{
+  volatile unsigned int loopCounter = 1000000;
+      pio_set_value(PROTO888A_PIO_LED_SCENE,0);
+      while (loopCounter--);
+      
+      loopCounter = 10000;
+      pio_set_value(PROTO888A_PIO_LED_SCENE,1);
+      while (loopCounter--);
+}
+//**********************************************************

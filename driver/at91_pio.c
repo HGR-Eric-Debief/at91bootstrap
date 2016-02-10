@@ -93,13 +93,20 @@ static inline unsigned pin_to_mask(unsigned pin)
 static void pio4_set_periph(unsigned pio, unsigned mask,
 				int config, unsigned func)
 {
-	unsigned int value = func;
+  write_pio(pio, PIO_MSKR, mask);
 
-	write_pio(pio, PIO_MSKR, mask);
+  unsigned int value = func;
 
-	value |= (config & PIO_PULLUP) ? AT91C_PIO_CFGR_PUEN : 0;
-	value |= (config & PIO_PULLDOWN) ? AT91C_PIO_CFGR_PDEN : 0;
+  //Apply the configuration attributes
+  
+  //Drive strength : default is LOW (0 value)
+  value |= (config & PIO_DRVSTR_LOW) ? AT91C_PIO_CFGR_DRVSTR_LOW : 0;
+  value |= (config & PIO_DRVSTR_MED) ? AT91C_PIO_CFGR_DRVSTR_MEDIUM : 0;
+  value |= (config & PIO_DRVSTR_HIGH) ? AT91C_PIO_CFGR_DRVSTR_HIGH : 0;
 
+  value |= (config & PIO_PULLUP) ? AT91C_PIO_CFGR_PUEN : 0;
+  value |= (config & PIO_PULLDOWN) ? AT91C_PIO_CFGR_PDEN : 0;
+  
 	write_pio(pio, PIO_CFGR, value);
 }
 #endif

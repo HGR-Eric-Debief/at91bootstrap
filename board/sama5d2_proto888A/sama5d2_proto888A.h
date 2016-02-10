@@ -69,6 +69,7 @@
  * DBGU Settings
  */
 #define	USART_BASE	AT91C_BASE_UART1
+#define DBGU_ID_UART AT91C_ID_UART1
 
 /*
  * DataFlash Settings
@@ -92,6 +93,10 @@
 
 #if defined(CONFIG_QSPI)
 
+#ifndef CONFIG_QSPI1_IOSET_2
+#error QSPI1 on IOSET 2 only.
+#endif
+
 #if defined(CONFIG_QSPI_BUS1)
 #define	CONFIG_SYS_BASE_QSPI		AT91C_BASE_QSPI1
 #define	CONFIG_SYS_BASE_QSPI_MEM	AT91C_BASE_QSPI1_MEM
@@ -113,4 +118,7 @@
  * MMU Table storage : 16kb (4096 descriptors(32bits)) at the end of the SRAM1 area
  */
 #define MEMORY_TRANSLATION_TABLE_BASE_ADDR (0x220000 - (16 * 1024))
+
+//! The LED SCENE PIO
+#define PROTO888A_PIO_LED_SCENE AT91C_PIN_PD(5)
 #endif
