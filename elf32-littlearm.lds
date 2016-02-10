@@ -45,6 +45,4 @@ SECTIONS
 _romsize = _edata - _stext;
 _sramsize = _ebss - _stext;
 end = .;  /* define a global symbol marking the end of application */
-/* Set the Memory translation table (16kB) at the top of the SRAM1 memory.*/
-PROVIDE(MEMORY_TRANSLATION_TABLE_BASE = 0x320000 - 0x4000);
 
