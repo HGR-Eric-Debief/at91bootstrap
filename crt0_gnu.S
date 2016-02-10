@@ -56,16 +56,23 @@ _exception_vectors:
 	b 	irq_vector	/* IRQ : read the AIC */
 	b 	fiq_vector      /* FIQ */
 
+/* all exception vector call WFI : allow to be followed on power supply : POWER supply DEBUG !! */
+
 undef_vector:
+	wfi
 	b 	undef_vector
 swi_vector:
+	wfi
 	b 	swi_vector
 pabt_vector:
+	wfi
 	b 	pabt_vector
 dabt_vector:
+	wfi
 	subs	pc, r14, #4	/* return */
 	nop
 rsvd_vector:
+	wfi
 	b 	rsvd_vector
 irq_vector:
 	b 	irq_vector
@@ -159,6 +166,11 @@ _init_mon:
 #endif
 
 /* Branch on C code Main function (with interworking) */
+/*
+  ldr r4, = enable_irq
+  mov lr,pc
+  bx r4
+*/
 _branch_main:
 	ldr     r4, = main
 	mov     lr, pc
@@ -247,6 +259,7 @@ disable_irq:
 	orr r0, r0, #0xc0
 	msr	cpsr_c, r0
 	bx	lr
+
 
 	.global get_cpsr
 get_cpsr:
