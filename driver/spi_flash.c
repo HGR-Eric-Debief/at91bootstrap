@@ -160,8 +160,8 @@ dataflash_read_array_DMA(struct dataflash_descriptor *df_desc,
   unsigned int byte_addr = 0;
   unsigned int page_shift;
   unsigned int page_size;
-  static const unsigned int DMA_CHUNK_MAX_LENGTH = 0xFFFF;
-  static const unsigned int DBG_DUMP_LENGTH = 16;
+  const unsigned int DMA_CHUNK_MAX_LENGTH = DMA_DEV_GetDmaTransactionMaxSize();
+  const unsigned int DBG_DUMP_LENGTH = 16;
   unsigned int round_length = DMA_CHUNK_MAX_LENGTH;
   DMA_DEV_IOStream_t readArrayStream;
   int ret = 0;

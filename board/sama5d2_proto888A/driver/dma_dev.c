@@ -377,3 +377,10 @@ DMA_DEV_IsTransferInProgress(const DMA_DEV_IOStream_t* const stream)
          (stream->TxChannel != NULL && !xdmad_is_transfer_done(stream->TxChannel));
 }
 //*************************************************************
+unsigned int
+DMA_DEV_GetDmaTransactionMaxSize(void)
+{
+  //The SAMA5D2x DMA DMA transaction (one micro-block and one block) size is of 2^24 bytes
+  return 0xFFFFFF;
+}
+//**************************************************************

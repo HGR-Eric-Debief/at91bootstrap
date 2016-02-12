@@ -56,6 +56,10 @@ typedef struct _DMA_DEV_IOStream
 #endif
 } DMA_DEV_IOStream_t;
 
+//! @return the max size of a DMA transaction
+unsigned int
+DMA_DEV_GetDmaTransactionMaxSize(void);
+
 /**
  * Initialize the DMA for the given SPI ctrlr : Open the IOStream.
  * @param stream [OUT] : The DMA/Device stream to open.

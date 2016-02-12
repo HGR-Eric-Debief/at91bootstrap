@@ -322,3 +322,11 @@ DMA_DEV_IsTransferInProgress(const DMA_DEV_IOStream_t* const stream)
   return !(DMAD_IsTransferDone(&dmad, stream->RxChannel) || DMAD_IsTransferDone(&dmad, stream->TxChannel));
 }
 //*************************************************************
+unsigned int
+DMA_DEV_GetDmaTransactionMaxSize(void)
+{
+  //The SAMA5D3x DMA transaction size is of 65535 bytes
+  return 0xFFFF;
+}
+//*************************************************************
+
