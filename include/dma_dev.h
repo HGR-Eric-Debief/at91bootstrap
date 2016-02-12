@@ -27,19 +27,35 @@
  * ----------------------------------------------------------------------------
  */
 
-#ifndef SPI_FLASH_DMA_H_
-#define SPI_FLASH_DMA_H_
+#ifndef SPI_DEV_DMA_H_
+#define SPI_DEV_DMA_H_
 
 #include <stdbool.h>
-#include "dmad.h"
+
+
+#if defined (SAMA5D2)
+struct _xdmad_channel;
+#endif
 
 //*********************** Types **********************
+/**
+ * The DMA stream descriptor Rx and Tx channels for SPI operation.
+ * The inner structure depends of the target
+ */
 typedef struct _DMA_DEV_IOStream
 {
   unsigned int spi_ctrlr_base_addr; //!< BAse addresse of the SPI Controller.
+#if defined(SAMAD3X)
   unsigned int RxChannel; //!< RX channel of the stream.
   unsigned int TxChannel; //!< TX channel of the stream.
+#elif defined (SAMA5D2)
+  struct _xdmad_channel* RxChannel; //!< RX channel of the stream.
+  struct _xdmad_channel* TxChannel; //!< TX channel of the stream.
+#else
+#error unknown target
+#endif
 } DMA_DEV_IOStream_t;
+
 /**
  * Initialize the DMA for the given SPI ctrlr : Open the IOStream.
  * @param stream [OUT] : The DMA/Device stream to open.
@@ -82,4 +98,4 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
 bool
 DMA_DEV_IsTransferInProgress(const DMA_DEV_IOStream_t* const stream);
 
-#endif /*SPI_FLASH_DMA_H_*/
+#endif /*SPI_DEV_DMA_H_*/

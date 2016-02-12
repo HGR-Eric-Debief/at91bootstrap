@@ -18,6 +18,11 @@ ifeq ($(CONFIG_WITH_MMU),y)
 CPPFLAGS += -I$(BOARD_DRIVERS_SRC)
 endif
 
+#Add DMA support file
+COBJS-$(CONFIG_DATAFLASH_LOAD_WITH_DMA) += $(BOARD_DRIVERS_SRC)/dma_dev.o
+COBJS-$(CONFIG_DATAFLASH_LOAD_WITH_DMA) += $(BOARD_DRIVERS_SRC)/xdmad.o
+COBJS-$(CONFIG_DATAFLASH_LOAD_WITH_DMA) += $(BOARD_DRIVERS_SRC)/at91_xdma.o
+
 
 #Add the memory lowlevel init code according to the actual type : only LP-DDR1 !
 COBJS-$(CONFIG_LPDDR1) += $(BOARD_DRIVERS_SRC)/lpddr1.o

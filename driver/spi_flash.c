@@ -84,6 +84,9 @@
 //! Maximum BASE speed for any SPI Flash device now (10MHz)
 #define SPI_MAX_BASE_SPEED 10000000
 
+//! The current SPI bus clock(can be changed under the DEBUG)
+unsigned int g_ConfigSysSpiClock = CONFIG_SYS_SPI_CLOCK;
+
 
 struct dataflash_descriptor {
 	unsigned char	family;
@@ -158,14 +161,14 @@ dataflash_read_array_DMA(struct dataflash_descriptor *df_desc,
   unsigned int page_shift;
   unsigned int page_size;
   static const unsigned int DMA_CHUNK_MAX_LENGTH = 0xFFFF;
-  static const unsigned int DBG_DUMP_LENGTH = 32;
+  static const unsigned int DBG_DUMP_LENGTH = 16;
   unsigned int round_length = DMA_CHUNK_MAX_LENGTH;
   DMA_DEV_IOStream_t readArrayStream;
   int ret = 0;
 
   dbg_log(DEBUG_INFO,"Dataflash DMA read\n");
   //Handle the SLOW/FAST read command selection according to the configured SPI bus clock
-  if (df_desc->max_spi_freq_slow_read < CONFIG_SYS_SPI_CLOCK)
+  if (df_desc->max_spi_freq_slow_read < g_ConfigSysSpiClock)
   {
     dbg_log(DEBUG_INFO,"Dataflash FAST READ activated\n");
     //FAST READ condition
@@ -179,8 +182,8 @@ dataflash_read_array_DMA(struct dataflash_descriptor *df_desc,
     cmd_len = 4;
   }
 
-  ret = DMA_DEV_OpenSPIIOStream(&readArrayStream, AT91C_BASE_SPI0,
-      AT91C_ID_SPI0);
+  ret = DMA_DEV_OpenSPIIOStream(&readArrayStream, AT91C_BASE_SPI1,
+      AT91C_ID_SPI1);
   if (ret)
     {
       return ret;
@@ -257,7 +260,7 @@ static int dataflash_read_array_PIO(struct dataflash_descriptor *df_desc,
     dbg_log(DEBUG_INFO,"Dataflash PIO read\n");
     
     //Handle the SLOW/FAST read command selection according to the configured SPI bus clock
-    if (df_desc->max_spi_freq_slow_read < CONFIG_SYS_SPI_CLOCK)
+    if (df_desc->max_spi_freq_slow_read < g_ConfigSysSpiClock)
     {
       dbg_log(DEBUG_INFO,"Dataflash FAST READ activated\n");
       //FAST READ condition
@@ -735,8 +738,8 @@ int spi_flash_loadimage(struct image_info *image)
 	struct dataflash_descriptor	df_descriptor;
 	struct dataflash_descriptor	*df_desc = &df_descriptor;
 	int ret = 0;
-  const unsigned int SPI_CLOCK = (CONFIG_SYS_SPI_CLOCK > SPI_MAX_BASE_SPEED) ?
-          SPI_MAX_BASE_SPEED : CONFIG_SYS_SPI_CLOCK;
+  const unsigned int SPI_CLOCK = (g_ConfigSysSpiClock > SPI_MAX_BASE_SPEED) ?
+          SPI_MAX_BASE_SPEED : g_ConfigSysSpiClock;
           
   dbg_log(2,"SPI bus @ %d kHz\n",SPI_CLOCK/1000);
   
@@ -755,7 +758,19 @@ int spi_flash_loadimage(struct image_info *image)
 
 	at91_spi_enable();
 
-	ret = dataflash_probe_chip(df_desc);
+#if 0
+//TEST ==== EDF endless set IO & probe
+  volatile int loop = 1;
+  while(loop)
+  {
+    ENDLESS_LOOP:
+    at91_spi0_hw_init();
+    dataflash_probe_chip(df_desc);
+  }
+//  EDF ====
+#endif
+
+  ret = dataflash_probe_chip(df_desc);
 	if (ret) {
 		dbg_info("SF: Fail to probe spi flash\n");
 		ret = -1;
@@ -763,11 +778,11 @@ int spi_flash_loadimage(struct image_info *image)
 	}
 
 	//Set the SPI at full speed if needed
-  if (CONFIG_SYS_SPI_CLOCK > SPI_MAX_BASE_SPEED)
+  if (g_ConfigSysSpiClock > SPI_MAX_BASE_SPEED)
     {
       dbg_log(2, "SF: Speeding up ...\n");
       at91_spi_disable();
-      ret = at91_spi_init(AT91C_SPI_PCS_DATAFLASH, CONFIG_SYS_SPI_CLOCK,
+      ret = at91_spi_init(AT91C_SPI_PCS_DATAFLASH, g_ConfigSysSpiClock,
           CONFIG_SYS_SPI_MODE);
       if (ret)
         {
