@@ -166,18 +166,18 @@ dataflash_read_array_DMA(struct dataflash_descriptor *df_desc,
   DMA_DEV_IOStream_t readArrayStream;
   int ret = 0;
 
-  dbg_log(DEBUG_INFO,"Dataflash DMA read\n");
+  dbg_log(DEBUG_LOUD,"Dataflash DMA read\n");
   //Handle the SLOW/FAST read command selection according to the configured SPI bus clock
   if (df_desc->max_spi_freq_slow_read < g_ConfigSysSpiClock)
   {
-    dbg_log(DEBUG_INFO,"Dataflash FAST READ activated\n");
+    dbg_log(DEBUG_LOUD,"Dataflash FAST READ activated\n");
     //FAST READ condition
     cmd[0] = CMD_READ_ARRAY_FAST;
     cmd_len = 5;//Handle the dummy byte directly in the command phase.
   }
   else
   {
-    dbg_log(DEBUG_INFO,"Dataflash SLOW READ activated\n");
+    dbg_log(DEBUG_LOUD,"Dataflash SLOW READ activated\n");
     cmd[0] = CMD_READ_ARRAY_SLOW;
     cmd_len = 4;
   }
@@ -215,7 +215,7 @@ dataflash_read_array_DMA(struct dataflash_descriptor *df_desc,
           round_length);
       if (ret)
         {
-          dbg_log(DEBUG_INFO,"Transfer canceled after error : %d\n", ret);
+          dbg_log(DEBUG_ERROR,"Transfer canceled after error : %d\n", ret);
           return -1;
         }
 
@@ -257,19 +257,19 @@ static int dataflash_read_array_PIO(struct dataflash_descriptor *df_desc,
       }
     else
     address = offset;
-    dbg_log(DEBUG_INFO,"Dataflash PIO read\n");
+    dbg_log(DEBUG_LOUD,"Dataflash PIO read\n");
     
     //Handle the SLOW/FAST read command selection according to the configured SPI bus clock
     if (df_desc->max_spi_freq_slow_read < g_ConfigSysSpiClock)
     {
-      dbg_log(DEBUG_INFO,"Dataflash FAST READ activated\n");
+      dbg_log(DEBUG_LOUD,"Dataflash FAST READ activated\n");
       //FAST READ condition
       cmd[0] = CMD_READ_ARRAY_FAST;
       cmd_len = 5;//Handle the dummy byte directly in the command phase.
     }
     else
     {
-      dbg_log(DEBUG_INFO,"Dataflash SLOW READ activated\n");
+      dbg_log(DEBUG_LOUD,"Dataflash SLOW READ activated\n");
       cmd[0] = CMD_READ_ARRAY_SLOW;
       cmd_len = 4;
     }
@@ -293,7 +293,7 @@ static int dataflash_read_array_PIO(struct dataflash_descriptor *df_desc,
     ret = df_send_command(cmd, cmd_len, buf, len);
     if (ret)
       {
-        dbg_log(DEBUG_INFO,"Transfer canceled after error : %d\n", ret);
+        dbg_log(DEBUG_ERROR,"Transfer canceled after error : %d\n", ret);
         return -1;
       }
     return 0;
@@ -741,7 +741,7 @@ int spi_flash_loadimage(struct image_info *image)
   const unsigned int SPI_CLOCK = (g_ConfigSysSpiClock > SPI_MAX_BASE_SPEED) ?
           SPI_MAX_BASE_SPEED : g_ConfigSysSpiClock;
           
-  dbg_log(2,"SPI bus @ %d kHz\n",SPI_CLOCK/1000);
+  dbg_log(DEBUG_INFO,"SPI bus @ %d kHz\n",SPI_CLOCK/1000);
   
 	memset(df_desc, 0, sizeof(*df_desc));
 
@@ -780,13 +780,13 @@ int spi_flash_loadimage(struct image_info *image)
 	//Set the SPI at full speed if needed
   if (g_ConfigSysSpiClock > SPI_MAX_BASE_SPEED)
     {
-      dbg_log(2, "SF: Speeding up ...\n");
+      dbg_log(DEBUG_INFO, "SF: Speeding up to %dkHz...\n", g_ConfigSysSpiClock/1000);
       at91_spi_disable();
       ret = at91_spi_init(AT91C_SPI_PCS_DATAFLASH, g_ConfigSysSpiClock,
           CONFIG_SYS_SPI_MODE);
       if (ret)
         {
-          dbg_log(1, "SF: Fail to speed-up spi\n");
+          dbg_log(DEBUG_ERROR, "SF: Fail to speed-up spi\n");
           return -1;
         }
       at91_spi_enable();
@@ -814,7 +814,7 @@ int spi_flash_loadimage(struct image_info *image)
 	ret = dataflash_read_array(df_desc,
 			image->offset, image->length, image->dest);
 	if (ret) {
-		dbg_info("** SF: Serial flash read error**\n");
+		dbg_log(DEBUG_ERROR, "** SF: Serial flash read error**\n");
 		ret = -1;
 		goto err_exit;
 	}
@@ -833,7 +833,7 @@ int spi_flash_loadimage(struct image_info *image)
 	ret = dataflash_read_array(df_desc,
 		image->of_offset, image->of_length, image->of_dest);
 	if (ret) {
-		dbg_info("** SF: DT: Serial flash read error**\n");
+		dbg_log(DEBUG_ERROR,"** SF: DT: Serial flash read error**\n");
 		ret = -1;
 		goto err_exit;
 	}

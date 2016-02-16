@@ -135,9 +135,6 @@ static void _DmaTxCallback0(struct _xdmad_channel *channel, void *arg)
 unsigned int
 DMA_DEV_OpenSPIIOStream(DMA_DEV_IOStream_t* const stream, const unsigned int spi_ctrlr_base_addr, const unsigned int spi_id)
 {
-  unsigned int dwCfg;
-  unsigned char iController/*, iChannel*/;
-  unsigned int dmadStatus = 0;
   /* Driver initialization if needed*/
   if (!IsDriverInitDone)
   {
@@ -159,10 +156,12 @@ DMA_DEV_OpenSPIIOStream(DMA_DEV_IOStream_t* const stream, const unsigned int spi
   stream->TxChannel = xdmad_allocate_channel(XDMAD_PERIPH_MEMORY, spi_id);
   stream->RxChannel = xdmad_allocate_channel(spi_id, XDMAD_PERIPH_MEMORY);
   if (stream->TxChannel == NULL || stream->RxChannel == NULL)
-    {
+  {
       dbg_log(DEBUG_ERROR,"DMA channel allocation error\n");
       return 1;
-    }
+  }
+  dbg_log(DEBUG_VERY_LOUD, "Tx on XDMA Channel %d, Rx on XDMA Channel %d\n", xdmad_get_channel_id(stream->TxChannel), xdmad_get_channel_id(stream->RxChannel));
+  
 /* Prepare DMA channels */
   xdmad_prepare_channel(stream->RxChannel);
   xdmad_prepare_channel(stream->TxChannel);
@@ -180,12 +179,11 @@ DMA_DEV_OpenSPIIOStream(DMA_DEV_IOStream_t* const stream, const unsigned int spi
 void
 DMA_DEV_CloseSPIIOStream(DMA_DEV_IOStream_t* const stream)
 {
-  unsigned int dmaResult = 0;
-  dmaResult = xdmad_stop_transfer(stream->RxChannel);
-  dmaResult = xdmad_free_channel(stream->RxChannel);
+  xdmad_stop_transfer(stream->RxChannel);
+  xdmad_free_channel(stream->RxChannel);
 
-  dmaResult = xdmad_stop_transfer(stream->TxChannel);
-  dmaResult = xdmad_free_channel(stream->TxChannel);
+  xdmad_stop_transfer(stream->TxChannel);
+  xdmad_free_channel(stream->TxChannel);
 }
 //*******************************************************************
 unsigned int
@@ -199,8 +197,8 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
    * On for each way (Send / Receive).
    * Use the View2 to set the special configuration according each phase.
    */
-  struct _xdmad_desc_view2 tdSendStream[2];
-  struct _xdmad_desc_view2 tdReceiveStream[2];
+  struct _xdmad_desc_view2 tdSendStream[2]    __attribute__((aligned(4)));
+  struct _xdmad_desc_view2 tdReceiveStream[2] __attribute__((aligned(4)));
 
   unsigned char junkByte = 0; //Used to handle the unused send/received byte in inactive phase of each transfer.
   
@@ -210,25 +208,21 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   recvDone0 = 0;
 #endif
 
-  dbg_log(DEBUG_INFO,"%s() : send %d B, receive %d B\n", __FUNCTION__, sendLength, recvLength);
+  dbg_log(DEBUG_LOUD,"%s() : send %d B, receive %d B\n", __FUNCTION__, sendLength, recvLength);
   
-  //Activate IO sync on SPI
-  at91_spi_oisync(1);
-
   //Force stop transfer on the channel if in use : Not always Ok once actually ended.
   if (!xdmad_is_transfer_done(stream->TxChannel))
     xdmad_stop_transfer(stream->TxChannel);
 
   if (!xdmad_is_transfer_done(stream->RxChannel))
     xdmad_stop_transfer(stream->RxChannel);
-  CONFIG:
   dbg_log(DEBUG_LOUD,"============= SEND Command ==============\n");
   //First phase : send the command
   tdSendStream[0].next_desc = &tdSendStream[1];
-  tdSendStream[0].ublock_size = XDMA_UBC_NVIEW_NDV3 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
+  tdSendStream[0].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
   tdSendStream[0].src_addr = toSend;
   tdSendStream[0].dest_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_TDR);
-  tdSendStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_dest_txitf(stream->TxChannel))
+  tdSendStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_MEM2PER
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -241,10 +235,10 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
     
   //First phase : just dump the received byte
   tdReceiveStream[0].next_desc = &tdReceiveStream[1];
-  tdReceiveStream[0].ublock_size = XDMA_UBC_NVIEW_NDV3 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
+  tdReceiveStream[0].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
   tdReceiveStream[0].src_addr =(void*)(stream->spi_ctrlr_base_addr + SPI_RDR);
   tdReceiveStream[0].dest_addr = &junkByte;
-  tdReceiveStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_src_rxitf(stream->RxChannel))
+  tdReceiveStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_PER2MEM
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -260,8 +254,8 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   tdSendStream[1].next_desc = 0;
   tdSendStream[1].src_addr= &junkByte;
   tdSendStream[1].dest_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_TDR);
-  tdSendStream[1].ublock_size = XDMA_UBC_NVIEW_NDV3 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED |recvLength;
-  tdSendStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_dest_txitf(stream->TxChannel))
+  tdSendStream[1].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED |recvLength;
+  tdSendStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_MEM2PER
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -273,10 +267,10 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
     | XDMAC_CC_SAM_FIXED_AM;
   //Second Phase : Actually receive the data
   tdReceiveStream[1].next_desc = 0;
-  tdReceiveStream[1].ublock_size = XDMA_UBC_NVIEW_NDV3 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | recvLength;
+  tdReceiveStream[1].ublock_size = XDMA_UBC_NVIEW_NDV2 |  XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | recvLength;
   tdReceiveStream[1].src_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_RDR);
   tdReceiveStream[1].dest_addr = toRecv;
-  tdReceiveStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_src_rxitf(stream->RxChannel))
+  tdReceiveStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_PER2MEM
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -332,8 +326,10 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
       goto EXIT_POINT;
     }
 
+  //Activate IO sync on SPI
+  at91_spi_oisync(1);
+
   //Start !!
-  START:
   dmaResult = xdmad_start_transfer(stream->RxChannel);
   dbg_log(DEBUG_VERY_LOUD, "DBG : RX xdmad_start_transfer()=>%d\n", dmaResult );
   if (dmaResult  != XDMAD_OK)
@@ -346,14 +342,11 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
       xdmad_stop_transfer(stream->RxChannel);
       goto EXIT_POINT;
     }
-  WAIT:
-  //Wait the end of the transfer : operation is synchronous. Use RX  && TX (need at91_spi_oisync activated !!)
-  //Only one channel get a state change !! ??
-  //while (!(xdmad_is_transfer_done(stream->RxChannel) || xdmad_is_transfer_done(stream->TxChannel)))
-  //while (!xdmad_is_transfer_done(stream->RxChannel))
-  while (!xdmad_is_transfer_done(stream->TxChannel))
-        xdmad_poll();
-  DONE:
+  //Wait the end of the transfer : operation is synchronous. RX and TX done.
+  while (!(xdmad_is_transfer_done(stream->RxChannel) && xdmad_is_transfer_done(stream->TxChannel)))
+  {
+    xdmad_poll();
+  }
   xdmad_stop_transfer(stream->RxChannel);
   xdmad_stop_transfer(stream->TxChannel);
 
@@ -366,7 +359,8 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   cp15_invalidate_dcache_for_dma((unsigned int)toRecv, ((unsigned int)(toRecv + recvLength)));
 #endif
 
-  EXIT_POINT: at91_spi_oisync(0);
+  EXIT_POINT: 
+  at91_spi_oisync(0);
   return dmaResult;
 }
 //************************************************************

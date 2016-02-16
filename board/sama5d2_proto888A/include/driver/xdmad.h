@@ -253,12 +253,11 @@ extern bool xdmad_is_transfer_done(struct _xdmad_channel *channel);
  */
 extern unsigned int xdmad_stop_transfer(struct _xdmad_channel *channel);
 
-//! @return the RX interface id of the source
-extern unsigned int xdmad_get_src_rxitf(struct _xdmad_channel *channel);
+//! @return the channel id
+extern unsigned int xdmad_get_channel_id (struct _xdmad_channel const * const channel);
 
-//! @return the TX interface id of the destination
-extern unsigned int xdmad_get_dest_txitf(struct _xdmad_channel *channel);
-
+//! @return the synchronization perid value according to the channel synchronization source
+extern unsigned int xdmad_get_perid(struct _xdmad_channel *channel, unsigned int dsync);
 
 /**     @}*/
 

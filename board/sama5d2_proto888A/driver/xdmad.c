@@ -99,7 +99,7 @@ struct _xdmad_channel
 struct _xdmad {
 	struct _xdmad_channel channels[XDMAD_CHANNELS];
 	bool                  polling;
-	unsigned char               polling_timeout;
+	unsigned char         polling_timeout;
 };
 
 static struct _xdmad _xdmad;
@@ -202,7 +202,7 @@ static void xdmad_handler(void)
 
 		gcs = xdmac_get_global_channel_status(xdmac);
     
-    dbg_log(DEBUG_INFO, "%s(), gis:%x, gcs:%x\n", __FUNCTION__, gis, gcs );
+    dbg_log(DEBUG_VERY_LOUD, "%s(), gis:%x, gcs:%x\n", __FUNCTION__, gis, gcs );
 
     for (chan = 0; chan < XDMAC_CHANNELS; chan++) 
     {
@@ -216,12 +216,12 @@ static void xdmad_handler(void)
 			if (channel->state == XDMAD_STATE_FREE)
 				continue;
 
-			//TEST EDF if ((gcs & (1 << chan))) 
+			//if (!(gcs & (1 << chan)))  //With this condition, BIS is never seen in descriptor based transaction.
       {
 				const unsigned int cis = xdmac_get_channel_isr(xdmac, chan);
         const unsigned int cim = xdmac_get_channel_isr_mask(xdmac, chan);
         
-        dbg_log(DEBUG_INFO, "%s(), Chan[%d]:cim:%x, cis:%x\n", __FUNCTION__, chan, cim, cis);
+        dbg_log(DEBUG_LOUD, "%s(), Chan[%d]:cim:%x, cis:%x\n", __FUNCTION__, chan, cim, cis);
 
         if (cis & XDMAC_CIS_BIS)
         {
@@ -419,7 +419,7 @@ unsigned int xdmad_prepare_channel(struct _xdmad_channel *channel)
 
 bool xdmad_is_transfer_done(struct _xdmad_channel *channel)
 {
-	return channel->state != XDMAD_STATE_STARTED;
+	return channel->state != XDMAD_STATE_STARTED && channel->state != XDMAD_STATE_IN_PROGRESS;
 }
 
 unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
@@ -437,6 +437,7 @@ unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
 	/* Clear status */
 	xdmac_get_global_isr(xdmac);
 	xdmac_get_channel_isr(xdmac, channel->id);
+  
   //Set PERID in the configuration, for NVD2 & NVD3 must be done in the client code.
   if (cfg->cfg.bitfield.dsync == XDMAC_CC_DSYNC_PER2MEM)
   {
@@ -446,65 +447,33 @@ unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
   {
     cfg->cfg.bitfield.perid = channel->dest_txif;
   }
+    //Set the base configuration will be overridden by the descriptors if any according their respective types.
+    xdmac_set_src_addr(xdmac, channel->id, cfg->src_addr);
+    xdmac_set_dest_addr(xdmac, channel->id, cfg->dest_addr);
+    xdmac_set_microblock_control(xdmac, channel->id, cfg->ublock_size);
+    //xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);//Not needed as block_size == 0 : one block
+    xdmac_set_block_control(xdmac, channel->id, cfg->block_size);
+    xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
+    xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
+    xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
+    xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
+
   //Check whether it's a descriptor or straight configuration based transaction
   if ((desc_cntrl & XDMAC_CNDC_NDE) == XDMAC_CNDC_NDE_DSCR_FETCH_EN)
   {
-    /* Descriptor based transaction enabled more or less with external configuration*/
-    //Common part
+    /* Descriptor based transaction enabled*/
     xdmac_set_descriptor_addr(xdmac, channel->id, desc_addr, 0);
     xdmac_set_descriptor_control(xdmac, channel->id, desc_cntrl);
     xdmac_disable_channel_it(xdmac, channel->id, -1);
 
     //Needed even no interrupt used as it will drive the channel IS in the GIS register
     xdmac_enable_channel_it(xdmac, channel->id, 
-                            XDMAC_CIE_LIE |/* XDMAC_CIE_BIE |*/ XDMAC_CIE_RBIE |
+                            XDMAC_CIE_LIE | XDMAC_CIE_BIE | XDMAC_CIE_RBIE |
                             XDMAC_CIE_WBIE | XDMAC_CIE_ROIE); 
-
-    // complete the configuration according to the descriptor type
-    if ((desc_cntrl & XDMAC_CNDC_NDVIEW_Msk) == XDMAC_CNDC_NDVIEW_NDV0)
-    {
-      xdmac_set_src_addr(xdmac, channel->id, cfg->src_addr);
-      xdmac_set_dest_addr(xdmac, channel->id, cfg->dest_addr);
-      xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);//STRANGE !! linked to that the actual size is block_size - 1
-      xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
-      xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
-      xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
-      xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
-    }
-    else if ((desc_cntrl & XDMAC_CNDC_NDVIEW_Msk) == XDMAC_CNDC_NDVIEW_NDV1)
-    {
-      xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);
-      xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
-      xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
-      xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
-      xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
-    }
-    else if ((desc_cntrl & XDMAC_CNDC_NDVIEW_Msk) == XDMAC_CNDC_NDVIEW_NDV2)
-    {
-      xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);
-      xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
-      xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
-      xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
-      //Configuration comes from the first descriptor
-      xdmac_set_channel_config(xdmac, channel->id, ((struct _xdmad_desc_view2*) desc_addr)->cfg.uint32_value);
-    }
-    else if ((desc_cntrl & XDMAC_CNDC_NDVIEW_Msk) == XDMAC_CNDC_NDVIEW_NDV3)
-    {
-      //The configuration comes from the first descriptor 
-      xdmac_set_channel_config(xdmac, channel->id, ((struct _xdmad_desc_view3*) desc_addr)->cfg.uint32_value);
-    }
   }
   else
   {
-    /* simple configuration based transaction. */
-    xdmac_set_src_addr(xdmac, channel->id, cfg->src_addr);
-    xdmac_set_dest_addr(xdmac, channel->id, cfg->dest_addr);
-    xdmac_set_microblock_control(xdmac, channel->id, cfg->ublock_size);
-    xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);
-    xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
-    xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
-    xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
-    xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
+    //No descriptor
     xdmac_set_descriptor_addr(xdmac, channel->id, 0, 0);
     xdmac_set_descriptor_control(xdmac, channel->id, 0);
     //Note : interrupt must be activated even if not used otherwise, it won't toggle the GIS bit and then xdmad_handler() won't trig the modification.
@@ -512,7 +481,6 @@ unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
     XDMAC_CIE_BIE | XDMAC_CIE_DIE |
     XDMAC_CIE_FIE | XDMAC_CIE_RBIE |
     XDMAC_CIE_WBIE | XDMAC_CIE_ROIE);
-    
   }
 	return XDMAD_OK;
 }
@@ -556,16 +524,15 @@ unsigned int xdmad_stop_transfer(struct _xdmad_channel *channel)
 	return XDMAD_OK;
 }
 //****************************************************
-unsigned int
-xdmad_get_src_rxitf(struct _xdmad_channel *channel)
+extern unsigned int xdmad_get_channel_id (struct _xdmad_channel const* const channel)
 {
-  return channel->src_rxif;
+  return channel->id;
 }
 //****************************************************
-unsigned int
-xdmad_get_dest_txitf(struct _xdmad_channel *channel)
+unsigned int xdmad_get_perid(struct _xdmad_channel *channel, unsigned int dsync)
 {
-  return channel->dest_txif;
+  //The rule is : if sync_src == MEM2PER, sync itf is channel's dest_txif, if sync_src == PER2MEM, perid is in src_rxif
+  return (dsync == XDMAC_CC_DSYNC_MEM2PER) ? channel->dest_txif : channel->src_rxif;
 }
 //****************************************************
 
