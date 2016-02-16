@@ -222,7 +222,7 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   tdSendStream[0].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
   tdSendStream[0].src_addr = toSend;
   tdSendStream[0].dest_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_TDR);
-  tdSendStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
+  tdSendStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_sync_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_MEM2PER
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -238,7 +238,7 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   tdReceiveStream[0].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NDE_FETCH_EN | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | sendLength;
   tdReceiveStream[0].src_addr =(void*)(stream->spi_ctrlr_base_addr + SPI_RDR);
   tdReceiveStream[0].dest_addr = &junkByte;
-  tdReceiveStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
+  tdReceiveStream[0].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_sync_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_PER2MEM
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -255,7 +255,7 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   tdSendStream[1].src_addr= &junkByte;
   tdSendStream[1].dest_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_TDR);
   tdSendStream[1].ublock_size = XDMA_UBC_NVIEW_NDV2 | XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED |recvLength;
-  tdSendStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
+  tdSendStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_sync_perid(stream->TxChannel, XDMAC_CC_DSYNC_MEM2PER))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_MEM2PER
     | XDMAC_CC_MEMSET_NORMAL_MODE
@@ -270,7 +270,7 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   tdReceiveStream[1].ublock_size = XDMA_UBC_NVIEW_NDV2 |  XDMA_UBC_NSEN_UPDATED |XDMA_UBC_NDEN_UPDATED | recvLength;
   tdReceiveStream[1].src_addr = (void*)(stream->spi_ctrlr_base_addr + SPI_RDR);
   tdReceiveStream[1].dest_addr = toRecv;
-  tdReceiveStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
+  tdReceiveStream[1].cfg.uint32_value = XDMAC_CC_PERID(xdmad_get_sync_perid(stream->RxChannel, XDMAC_CC_DSYNC_PER2MEM))
     | XDMAC_CC_TYPE_PER_TRAN
     | XDMAC_CC_DSYNC_PER2MEM
     | XDMAC_CC_MEMSET_NORMAL_MODE

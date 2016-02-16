@@ -419,7 +419,7 @@ unsigned int xdmad_prepare_channel(struct _xdmad_channel *channel)
 
 bool xdmad_is_transfer_done(struct _xdmad_channel *channel)
 {
-	return channel->state != XDMAD_STATE_STARTED && channel->state != XDMAD_STATE_IN_PROGRESS;
+	return (channel->state == XDMAD_STATE_DONE ) || (channel->state != XDMAD_STATE_STARTED && channel->state != XDMAD_STATE_IN_PROGRESS);
 }
 
 unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
@@ -439,24 +439,18 @@ unsigned int xdmad_configure_transfer(struct _xdmad_channel *channel,
 	xdmac_get_channel_isr(xdmac, channel->id);
   
   //Set PERID in the configuration, for NVD2 & NVD3 must be done in the client code.
-  if (cfg->cfg.bitfield.dsync == XDMAC_CC_DSYNC_PER2MEM)
-  {
-    cfg->cfg.bitfield.perid = channel->src_rxif;
-  }
-  else
-  {
-    cfg->cfg.bitfield.perid = channel->dest_txif;
-  }
-    //Set the base configuration will be overridden by the descriptors if any according their respective types.
-    xdmac_set_src_addr(xdmac, channel->id, cfg->src_addr);
-    xdmac_set_dest_addr(xdmac, channel->id, cfg->dest_addr);
-    xdmac_set_microblock_control(xdmac, channel->id, cfg->ublock_size);
-    //xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);//Not needed as block_size == 0 : one block
-    xdmac_set_block_control(xdmac, channel->id, cfg->block_size);
-    xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
-    xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
-    xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
-    xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
+  cfg->cfg.bitfield.perid = xdmad_get_sync_perid(channel, cfg->cfg.bitfield.dsync);
+  
+  //Set the base configuration will be overridden by the descriptors if any according their respective types.
+  xdmac_set_src_addr(xdmac, channel->id, cfg->src_addr);
+  xdmac_set_dest_addr(xdmac, channel->id, cfg->dest_addr);
+  xdmac_set_microblock_control(xdmac, channel->id, cfg->ublock_size);
+  //xdmac_set_block_control(xdmac, channel->id, cfg->block_size > 1 ? cfg->block_size : 0);//Not needed as block_size == 0 : one block
+  xdmac_set_block_control(xdmac, channel->id, cfg->block_size);
+  xdmac_set_data_stride_mem_pattern(xdmac, channel->id, cfg->data_stride);
+  xdmac_set_src_microblock_stride(xdmac, channel->id, cfg->src_ublock_stride);
+  xdmac_set_dest_microblock_stride(xdmac, channel->id, cfg->dest_ublock_stride);
+  xdmac_set_channel_config(xdmac, channel->id, cfg->cfg.uint32_value);
 
   //Check whether it's a descriptor or straight configuration based transaction
   if ((desc_cntrl & XDMAC_CNDC_NDE) == XDMAC_CNDC_NDE_DSCR_FETCH_EN)
@@ -529,7 +523,7 @@ extern unsigned int xdmad_get_channel_id (struct _xdmad_channel const* const cha
   return channel->id;
 }
 //****************************************************
-unsigned int xdmad_get_perid(struct _xdmad_channel *channel, unsigned int dsync)
+unsigned int xdmad_get_sync_perid(struct _xdmad_channel *channel, unsigned int dsync)
 {
   //The rule is : if sync_src == MEM2PER, sync itf is channel's dest_txif, if sync_src == PER2MEM, perid is in src_rxif
   return (dsync == XDMAC_CC_DSYNC_MEM2PER) ? channel->dest_txif : channel->src_rxif;
