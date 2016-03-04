@@ -66,12 +66,9 @@ config CONFIG_SPI_BUS2
 
 endchoice
 
-menu  "SPI IOSET Select"
-	depends on CPU_HAS_PIO4
-
 choice
 	prompt "SPI0 IOSET"
-	depends on CONFIG_SPI_BUS0
+	depends on CONFIG_SPI_BUS0 && CPU_HAS_PIO4
 	default	CONFIG_SPI0_IOSET_1
 	help
 
@@ -87,7 +84,7 @@ endchoice
 
 choice
 	prompt "SPI1 IOSET"
-	depends on CONFIG_SPI_BUS1
+	depends on CONFIG_SPI_BUS1 && CPU_HAS_PIO4
 	default	CONFIG_SPI1_IOSET_1
 	help
 
@@ -104,8 +101,6 @@ config CONFIG_SPI1_IOSET_3
 	bool "SPI1 IOSET 3"
 
 endchoice
-
-endmenu
 
 choice
 	prompt "Chip Select"
@@ -209,12 +204,9 @@ config CONFIG_QSPI_BUS1
 
 endchoice
 
-menu  "QSPI IOSET Select"
-	depends on CPU_HAS_PIO4
-
 choice
 	prompt "QSPI0 IOSET"
-	depends on CONFIG_QSPI_BUS0
+	depends on CONFIG_QSPI_BUS0 && CPU_HAS_PIO4
 	default	CONFIG_QSPI0_IOSET_1
 	help
 
@@ -234,7 +226,7 @@ endchoice
 
 choice
 	prompt "QSPI1 IOSET"
-	depends on CONFIG_QSPI_BUS1
+	depends on CONFIG_QSPI_BUS1 && CPU_HAS_PIO4
 	default	CONFIG_QSPI1_IOSET_1
 	help
 
@@ -251,8 +243,6 @@ config CONFIG_QSPI1_IOSET_3
 	bool "QSPI1 IOSET 3"
 
 endchoice
-
-endmenu
 
 endmenu
 
