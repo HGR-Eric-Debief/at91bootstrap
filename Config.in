@@ -193,6 +193,13 @@ config CONFIG_BEEAVE_DEBUG_LEDS_ON
 endchoice
 endmenu
 
+config CONFIG_TEST_FIRMWARE_LOAD
+  bool "Test Firmware Upload"
+  depends on !CONFIG_UPLOAD_3RD_STAGE
+  default n
+  help
+     Will upload the firmware 3 times, then reset and loop over.
+
 source "Config.in.secure"
 
 config CONFIG_THUMB

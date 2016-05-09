@@ -42,13 +42,17 @@
 #include "pm.h"
 #include "act8865.h"
 #include "sfr_aicredir.h"
+#include "rstc.h"
 
 #ifdef CONFIG_EXTERNAL_RAM_TEST
 #include "ddram_utils.h"
 #ifdef CONFIG_WITH_CACHE
-#include "CP15.h"
+#include "cp15.h"
 #endif /*CONFIG_WITH_CACHE*/
 #endif /*CONFIG_EXTERNAL_RAM_TEST*/
+
+//TEST DDR selfrefresh
+#include "arch/at91_pmc.h"
 
 
 void (*sdcard_set_of_name)(char *) = NULL;
@@ -80,8 +84,10 @@ static void display_banner (void)
 #endif
 #if defined (CONFIG_BUS_SPEED_176MHZ)
   static const char* const bus_clock_msg = "Bus: 176MHz";
+#elif defined (CONFIG_BUS_SPEED_166MHZ)
+  static const char* const bus_clock_msg = "Bus: 166MHz";
 #elif defined (CONFIG_BUS_SPEED_133MHZ)
-  static const char* const bus_clock_msg = "Bus: 133MHz";
+  static const char* const bus_clock_msg = "Bus: 133MHz";  
 #else
   static const char* const bus_clock_msg = "Bus: UNKNOWN";
 #endif
@@ -96,7 +102,7 @@ static void display_banner (void)
 int main(void)
 {
 	struct image_info image;
-	int ret;
+	int ret = 0;
   
 #ifdef CONFIG_HW_INIT
   hw_init();
@@ -137,12 +143,13 @@ int main(void)
 #if 1
 #ifdef CONFIG_WITH_CACHE
   //disable the CACHE first.
-  CP15_DisableIcache();
-  CP15_DisableDcache();
+  cp15_disable_icache();
+  cp15_disable_dcache();
 #endif
   
 #ifdef CONFIG_EXTERNAL_RAM_TEST_INFINITE
 #warning INFINITE RAM TEST
+//@Note code below for the SAMA5D2 softpack support code.
 for(;;)
 {
 #endif /*CONFIG_EXTERNAL_RAM_TEST_INFINITE*/
@@ -158,13 +165,13 @@ for(;;)
 //Now test WITH CACHE Activated
   dbg_log(DEBUG_INFO,"WITH Memory BURST\n");
 
-  CP15_EnableIcache();
-  CP15_EnableDcache();
+  cp15_enable_icache();
+  cp15_enable_dcache();
   
   do_external_ram_tests_step();  
   
-  CP15_DisableIcache();
-  CP15_DisableDcache();
+  cp15_disable_icache();
+  cp15_disable_dcache();
 #endif /*CONFIG_EXTERNAL_RAM_TEST_WITH_BURST*/
 
   dbg_log(DEBUG_INFO,"----------------------------\n");
@@ -176,8 +183,8 @@ for(;;)
 //===================================================
 #ifdef CONFIG_WITH_CACHE
   //Enable the CACHE if needed
-  CP15_EnableIcache();
-  CP15_EnableDcache();
+  cp15_enable_icache();
+  cp15_enable_dcache();
 #endif /*CONFIG_WITH_CACHE*/
 #else 
   //! @note Currently LETHAL, see the note above.
@@ -194,12 +201,37 @@ for(;;)
 #ifdef CONFIG_DISABLE_ACT8865_I2C
 	act8865_workaround();
 #endif
-
-	init_load_image(&image);
-
-	ret = load_image(&image);
-
-	load_image_done(&image, ret);
+  
+#if defined(CONFIG_TEST_FIRMWARE_LOAD)
+  unsigned int retryLoop = 40000000;
+  while (retryLoop--)
+  {
+#endif /*CONFIG_TEST_FIRMWARE_LOAD*/
+   
+    LOAD_IMAGE_BEGIN:
+    init_load_image(&image);
+    ret = load_image(&image);
+    
+    LOAD_IMAGE_END:
+    load_image_done(&image, ret);
+    
+#if defined(CONFIG_TEST_FIRMWARE_LOAD)
+    if (ret)
+    {
+      dbg_log(DEBUG_ERROR,"Load failed : %x, pausing...\r\n", ret);
+      //Pause to let time to do the log.
+      udelay(20000);
+      udelay(20000);
+      udelay(20000);
+      udelay(20000);
+      udelay(20000);
+      asm("WFI");
+    }
+  }
+  //EDF Test, reset if Ok.
+  if (ret == 0)
+    cpu_reset();
+#endif /*CONFIG_TEST_FIRMWARE_LOAD*/
 
 #ifdef CONFIG_SCLK
 	slowclk_switch_osc32();
@@ -207,16 +239,16 @@ for(;;)
   
 #if defined(CONFIG_ENTER_NWD)
 	switch_normal_world();
-
 	/* point never reached with TZ support */
 #endif
+
 return JUMP_ADDR;
 }
 //****************************************************
 //Will just display a running symbol (use the ABI convention for parameters
 void displayWaitDbg(unsigned int dbgdscr, unsigned int cpsr)
 {
-  dbg_log(2,"DBGDSCR:%b ; CPSR:0x%b\n", dbgdscr, cpsr);
+  dbg_log(DEBUG_INFO,"DBGDSCR:%b ; CPSR:0x%b\n", dbgdscr, cpsr);
   dbg_log(DEBUG_INFO,"Entering HALT Debug Mode, Waiting for the DEBUGGER ...\n");
 }
 //****************************************************
