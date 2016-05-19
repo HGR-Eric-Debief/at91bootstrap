@@ -203,11 +203,11 @@ config CONFIG_TEST_FIRMWARE_LOAD
 source "Config.in.secure"
 
 config CONFIG_THUMB
-	depends on !( SAMA5D3X || SAMA5D4)
-	bool "Build in thumb mode"
+  depends on !( SAMA5D3X || SAMA5D4 || CONFIG_WITH_MMU)
+  bool "Build in thumb mode"
   default n
-	help
-	  Build code in thumb mode
+  help
+    Build code in thumb mode only if no MMU activated (SAMA5D2 : locked on start up).
 
 config CONFIG_DISABLE_WATCHDOG
 	bool "Disable Watchdog"
