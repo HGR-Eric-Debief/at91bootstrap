@@ -78,7 +78,7 @@ enum {
   XDMAD_STATE_READ_FAILED, /**< DMA Read failed */
   XDMAD_STATE_WRITE_FAILED, /**< DMA Write failed */
   XDMAD_STATE_OVERFLOW, /**< DMA Overflow condition */
-  XDMAD_STATE_IN_PROGRESS, /**< DMA operation in progress (new block processed).*/
+  XDMAD_STATE_IN_PROGRESS, /**< DMA operation in progress (descriptor based transaction).*/
 };
 
 /** DMA driver channel */
@@ -487,13 +487,13 @@ unsigned int xdmad_start_transfer(struct _xdmad_channel *channel)
 		return XDMAD_BUSY;
 
 	/* Change state to 'started' */
+  if (!_xdmad.polling) {
+    xdmac_enable_global_it(channel->xdmac, 1 << channel->id);
+  }
+  
 	channel->state = XDMAD_STATE_STARTED;
-
 	/* Start DMA transfer */
 	xdmac_enable_channel(channel->xdmac, channel->id);
-	if (!_xdmad.polling) {
-		xdmac_enable_global_it(channel->xdmac, 1 << channel->id);
-	}
 
 	return XDMAD_OK;
 }
@@ -526,8 +526,10 @@ extern unsigned int xdmad_get_channel_id (struct _xdmad_channel const* const cha
 unsigned int xdmad_get_sync_perid(struct _xdmad_channel *channel, unsigned int dsync)
 {
   //The rule is : if sync_src == MEM2PER, sync itf is channel's dest_txif, if sync_src == PER2MEM, perid is in src_rxif
-  return (dsync == XDMAC_CC_DSYNC_MEM2PER) ? channel->dest_txif : channel->src_rxif;
+  //Code trick : use PER2MEM as it is ZERO either in bitfiel or straight value, so dsync can be both.
+  return (dsync == XDMAC_CC_DSYNC_PER2MEM) ? channel->src_rxif : channel->dest_txif ;
 }
+
 //****************************************************
 
 /**@}*/

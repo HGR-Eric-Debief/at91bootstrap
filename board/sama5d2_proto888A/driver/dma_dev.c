@@ -203,11 +203,15 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   unsigned char junkByte = 0; //Used to handle the unused send/received byte in inactive phase of each transfer.
   
   unsigned int dmaResult = 0;
+  
+  unsigned int xdmaChunkSizeCmd = 0;
+  unsigned int xdmaChunkSizeResp = 0;
+  
 
 #ifdef DMA_DEV_WITH_DMA_IRQ
   recvDone0 = 0;
 #endif
-
+CONFIG:
   dbg_log(DEBUG_LOUD,"%s() : send %d B, receive %d B\n", __FUNCTION__, sendLength, recvLength);
   
   //Force stop transfer on the channel if in use : Not always Ok once actually ended.
@@ -330,6 +334,7 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
   at91_spi_oisync(1);
 
   //Start !!
+START:
   dmaResult = xdmad_start_transfer(stream->RxChannel);
   dbg_log(DEBUG_VERY_LOUD, "DBG : RX xdmad_start_transfer()=>%d\n", dmaResult );
   if (dmaResult  != XDMAD_OK)

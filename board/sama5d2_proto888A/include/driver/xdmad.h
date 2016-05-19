@@ -257,7 +257,7 @@ extern unsigned int xdmad_stop_transfer(struct _xdmad_channel *channel);
 extern unsigned int xdmad_get_channel_id (struct _xdmad_channel const * const channel);
 
 //! @return the synchronization perid value according to the channel synchronization source
-extern unsigned int xdmad_get_perid(struct _xdmad_channel *channel, unsigned int dsync);
+extern unsigned int xdmad_get_sync_perid(struct _xdmad_channel *channel, unsigned int dsync);
 
 /**     @}*/
 
