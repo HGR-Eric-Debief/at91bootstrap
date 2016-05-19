@@ -100,6 +100,9 @@
 #include "sama5d2_proto888A.h"
 #endif
 
+#ifdef CONFIG_SAMA5D2_PROTO888B
+#include "sama5d2_proto888B.h"
+#endif
 
 /*
  * Functions Prototype
