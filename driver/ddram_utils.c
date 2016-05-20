@@ -29,6 +29,10 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "hardware.h"
+#include "board.h"
+#include "pmc.h"
+#include "arch/at91_pit.h"
+
 #include "usart.h"
 #include "arch/at91_ddrsdrc.h"
 #include "debug.h"
@@ -37,7 +41,7 @@
 #include "ddram_utils.h"
 
 #ifdef CONFIG_WITH_CACHE
-#include "CP15.h"
+#include "cp15.h"
 #endif /*CONFIG_WITH_CACHE*/
 
 
@@ -46,17 +50,22 @@
 
 
 // Memory test patterns
-#define PATTERNS_QTY 5
-static const unsigned char PATTERNS_8BIT[PATTERNS_QTY] = 
+static const unsigned char PATTERNS_8BIT[] = 
 {
-  0x00, 0xFF, 0xAA, 0x55, 0xA5
+  0x00, 0xFF, 0xAA, 0x55, 0xA5, 0x20, 0xED
 };
 
-static const unsigned int PATTERNS_32BIT[PATTERNS_QTY] = 
+static const unsigned int PATTERNS_32BIT[] = 
 {
-  0x00000000, 0xFFFFFFFF, 0xAAAAAAAA, 0x55555555, 0xA5A5A5A5
+  0x00000001, 0xFFFFFFFF, 0xAAAAAAAA, 0x55555555, 0xA5A5A5A5, 0x20202020, 0xEDEDEDED,
 };
 //**************************************************************
+//! The pattern qty macro
+#define PATTERNS_QTY(pattern_array) (sizeof(pattern_array)/sizeof(pattern_array[0]))
+
+//! The Max error qty value for each test
+static const unsigned int MAX_ERROR_QTY = 40;
+
 unsigned int 
 check_8bit_Ram(unsigned char* const base_address, unsigned int length, const unsigned char pattern)
 {
@@ -98,7 +107,7 @@ check_32bit_Ram(unsigned int* const base_address, unsigned int length, const uns
   volatile unsigned int* ram_pos = base_address;
   unsigned int error_count = 0;
   register unsigned int value = 0x00;
-  usart_puts("Checking External RAM 32 bits :\n");
+  usart_puts("Checking External RAM 32 bits :W/R\n");
   while ((error_count < 10) && length--)
   {
 #if 1
@@ -122,6 +131,67 @@ check_32bit_Ram(unsigned int* const base_address, unsigned int length, const uns
     //pattern ^= (unsigned int)ram_pos;
   }
   
+  usart_puts(error_count ? "\nERROR while testing RAM !! \n" : "\nNO Error while testing RAM \n");
+  
+  return error_count;
+}
+
+//*************************************************************
+//! Write phase, then Read phase
+unsigned int 
+check_32bit_Ram_2Phases(unsigned int* const base_address, unsigned int length, const unsigned int pattern)
+{
+  volatile unsigned int* ram_pos = base_address;
+  unsigned int error_count = 0;
+  register unsigned int value = 0x00;
+  unsigned int remainingQty = length;
+  usart_puts("Checking External RAM 32 bits 2 phases : WRITE\n");
+  while (--remainingQty)
+  {
+    #if 1
+    if ((remainingQty & 0xFFFF) == 0xFFFF) 
+      usart_puts("W");
+    
+    if ((remainingQty & 0xFFFFF) == 0xFFFFF)
+    {
+      usart_puts("+\n");
+    }
+#endif
+
+    *ram_pos = pattern;
+    //Straight check
+    if (*ram_pos != pattern)
+    {
+      usart_puts("Error on write !!\n");
+    }
+    ram_pos++;
+  }
+CHECK:
+  usart_puts("\nChecking External RAM 32 bits 2 phases : CHECK\n");
+  ram_pos = base_address;
+  remainingQty = length;
+  while ((error_count < MAX_ERROR_QTY) && remainingQty--)
+  {
+#if 1
+    if ((remainingQty & 0xFFFF) == 0xFFFF) 
+      usart_puts(".");
+    
+    if ((remainingQty & 0xFFFFF) == 0xFFFFF)
+    {
+      usart_puts("+\n");
+    }
+#endif
+
+    value = *ram_pos;
+    if (value != pattern)
+    {
+ERROR:
+      usart_puts("E");
+      dbg_log(DEBUG_ERROR,"\r\nAt %d, Expected:%d, Read: %d\r\n", ram_pos, pattern, value);
+      error_count++;
+    }
+    ram_pos++;
+  }
   usart_puts(error_count ? "\nERROR while testing RAM !! \n" : "\nNO Error while testing RAM \n");
   
   return error_count;
@@ -229,17 +299,25 @@ void
 do_external_ram_tests_step(void)
 {
   unsigned int test_idx = 0;
-  for (test_idx = 0 ; test_idx < PATTERNS_QTY ; ++test_idx)
+  for (test_idx = 0 ; test_idx < PATTERNS_QTY(PATTERNS_32BIT) ; ++test_idx)
   {
+    usart_puts("\n--------------------- NEW 32 bit PATTERN -----------------\n");
     check_32bit_Ram((unsigned int*)AT91C_BASE_DDRCS, CONFIG_RAM_SIZE * MEGA_WORDS, PATTERNS_32BIT[test_idx]);
+    check_32bit_Ram_2Phases((unsigned int*)AT91C_BASE_DDRCS, CONFIG_RAM_SIZE * MEGA_WORDS, PATTERNS_32BIT[test_idx]);
+    //For test only a sub part of the RAM
+    //check_32bit_Ram_2Phases((unsigned int*)AT91C_BASE_DDRCS, (2 * MEGA_WORDS), PATTERNS_32BIT[test_idx]);
   }
+#if 0
   //8 bits
-  for (test_idx = 0 ; test_idx < PATTERNS_QTY ; ++test_idx)
+  usart_puts("\n--------------------- NEW 8 bit PATTERN -----------------\n");
+  for (test_idx = 0 ; test_idx < PATTERNS_QTY(PATTERNS_8BIT) ; ++test_idx)
   {
     check_8bit_Ram((unsigned char*)AT91C_BASE_DDRCS, CONFIG_RAM_SIZE * MEGA_BYTES, PATTERNS_8BIT[test_idx]);
   }
+#endif
 }
 //*****************************************************************
+#if 0
 void
 do_external_ram_tests(void)
 {
@@ -287,3 +365,4 @@ for(;;)
 #endif
 usart_puts("********************************\n");
 }
+#endif
