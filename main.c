@@ -202,11 +202,11 @@ for(;;)
 	act8865_workaround();
 #endif
   
-#if defined(CONFIG_TEST_FIRMWARE_LOAD)
+#if defined(CONFIG_TEST_FIRMWARE_LOAD_LOOP)
   unsigned int retryLoop = 40000000;
   while (retryLoop--)
   {
-#endif /*CONFIG_TEST_FIRMWARE_LOAD*/
+#endif /*CONFIG_TEST_FIRMWARE_LOAD_LOOP*/
    
     LOAD_IMAGE_BEGIN:
     init_load_image(&image);
@@ -215,7 +215,7 @@ for(;;)
     LOAD_IMAGE_END:
     load_image_done(&image, ret);
     
-#if defined(CONFIG_TEST_FIRMWARE_LOAD)
+#if defined(CONFIG_TEST_FIRMWARE_LOAD_LOOP)
     if (ret)
     {
       dbg_log(DEBUG_ERROR,"Load failed : %x, pausing...\r\n", ret);
@@ -231,7 +231,7 @@ for(;;)
   //EDF Test, reset if Ok.
   if (ret == 0)
     cpu_reset();
-#endif /*CONFIG_TEST_FIRMWARE_LOAD*/
+#endif /*CONFIG_TEST_FIRMWARE_LOAD_LOOP*/
 
 #ifdef CONFIG_SCLK
 	slowclk_switch_osc32();

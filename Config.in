@@ -193,12 +193,28 @@ config CONFIG_BEEAVE_DEBUG_LEDS_ON
 endchoice
 endmenu
 
-config CONFIG_TEST_FIRMWARE_LOAD
-  bool "Test Firmware Upload"
+menu "FIRMWARE tests ..."
+config CONFIG_TEST_FIRMWARE_LOAD_LOOP
+  bool "Test firmware load"
   depends on !CONFIG_UPLOAD_3RD_STAGE
   default n
   help
      Will upload the firmware 3 times, then reset and loop over.
+
+config CONFIG_FIRMWARE_LOAD_VALIDATION
+  bool "Check the firmware load"
+  depends on !CONFIG_UPLOAD_3RD_STAGE
+  default n
+  help
+    Will check that the firmware load is correct in comparing the firmware contents with a known pattern
+
+config CONFIG_FIRMWARE_LOAD_VALIDATION_BYTE
+  hex "The expected byte in firmware (in HEX notation)"
+  depends on CONFIG_FIRMWARE_LOAD_VALIDATION
+  range 0 FF
+  help
+    The tested firmware area must be loaded with this byte only
+endmenu
 
 source "Config.in.secure"
 

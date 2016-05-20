@@ -143,6 +143,33 @@ void init_load_image(struct image_info *image)
 
 }
 
+//************************************************************
+/**
+ * @brief this function will compare the given area with the expected value. 
+ * 
+ * If one byte of the area is not the exected value, the function incerment the error counter then returns it.
+ * @param toCheck [in] The checked area
+ * @param length [in] The area length (in bytes)
+ * @return the found error count
+ */
+static unsigned int check_area(unsigned char* toCheck, const unsigned int length, const unsigned char expectedValue)
+{
+  unsigned int errorCount = 0;
+  const unsigned char* checkEnd = toCheck + length;
+  dbg_log(DEBUG_INFO, "Checking firmware contents(%d,%d) with : %d\r\n", toCheck, length, expectedValue);
+  
+  while (toCheck != checkEnd)
+  {
+    if (*toCheck != expectedValue)
+    {
+      dbg_log(DEBUG_INFO, "Unexpected value found at %d : %d instead of %d \r\n", toCheck, *toCheck, expectedValue);
+      errorCount++;
+    }
+    toCheck++;
+  }
+ return errorCount;
+}
+//************************************************************
 void load_image_done(struct image_info *image, int retval)
 {
 	char *media;
@@ -177,6 +204,20 @@ void load_image_done(struct image_info *image, int retval)
     dbg_log(DEBUG_INFO,BOOT_MSG_INVALID);
     while (1) signal_invalid_application();
   }
+
+#if defined(CONFIG_FIRMWARE_LOAD_VALIDATION)
+  {
+    const unsigned int errorCount = check_area(image->dest, image->length, CONFIG_FIRMWARE_LOAD_VALIDATION_BYTE);
+    if (errorCount == 0)
+    {
+      dbg_log(DEBUG_INFO,"Firmware load OK\r\n");
+    }
+    else
+    {
+      dbg_log(DEBUG_ERROR,"Firmware Load failed : %d errors\r\n", errorCount);
+    } 
+  }
+#endif
 
 #if !defined(CONFIG_UPLOAD_3RD_STAGE)  
 #if defined(CONFIG_SECURE)
