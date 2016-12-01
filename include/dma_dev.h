@@ -79,9 +79,11 @@ DMA_DEV_OpenSPIIOStream(DMA_DEV_IOStream_t* const stream,
  */
 void
 DMA_DEV_CloseSPIIOStream(DMA_DEV_IOStream_t* const stream);
+
+#if defined CONFIG_SPI
 /**
  * This function will handle the Command Response transfer in a SPI. The bus is activated for sendLength + sendRecv bytes.
- * It will use a DMA multi-transfer feature.
+ * It will use a DMA multi-transfer feature if needed.
  * @param stream [IN] The DMA stream used to do the transaction
  * @param toSend pointer to the first byte to send
  * @param sendLength length (in bytes) of the toSend
@@ -89,6 +91,8 @@ DMA_DEV_CloseSPIIOStream(DMA_DEV_IOStream_t* const stream);
  * @param recvLength Length in bytes of the received bytes
  * @return Error code translated from eDmadStatus in dmad.h
  */
+#endif /* CONFIG_SPI */
+
 unsigned int
 DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
     const unsigned int sendLength, void* toRecv, const unsigned int recvLength);
@@ -101,5 +105,20 @@ DMA_DEV_SPICommandResponse(const DMA_DEV_IOStream_t* const stream, void* toSend,
  */
 bool
 DMA_DEV_IsTransferInProgress(const DMA_DEV_IOStream_t* const stream);
+#if defined CONFIG_QSPI
+/**
+ * This function will handle the Command Response transfer in a QSPI. The bus is activated for sendLength + sendRecv bytes.
+ * It will use a DMA multi-transfer feature if needed.
+ * @param stream [IN] The DMA stream used to do the transaction
+ * @param toSend pointer to the first byte to send
+ * @param sendLength length (in bytes) of the toSend
+ * @param toRecv Pointer to the location where to store the received bytes.
+ * @param recvLength Length in bytes of the received bytes
+ * @return Error code translated from eDmadStatus in dmad.h
+ */
+unsigned int 
+DMA_DEV_QSPICommandResponse( const DMA_DEV_IOStream_t* const stream, void* toSend, const unsigned int sendLength, void* toRecv,
+    const unsigned int recvLength);
+#endif /*CONFIG_QSPI*/
 
 #endif /*SPI_DEV_DMA_H_*/

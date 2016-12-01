@@ -32,6 +32,7 @@
 #include "div.h"
 #include "string.h"
 #include "arch/at91_qspi.h"
+#include "dma_dev.h"
 
 #ifndef CONFIG_SYS_BASE_QSPI
 #define CONFIG_SYS_BASE_QSPI		AT91C_BASE_QSPI0
@@ -41,22 +42,22 @@
 #define	CONFIG_SYS_BASE_QSPI_MEM	AT91C_BASE_QSPI0_MEM
 #endif
 
-static unsigned int qspi_get_base(void)
+static inline unsigned int qspi_get_base(void)
 {
 	return CONFIG_SYS_BASE_QSPI;
 }
 
-static unsigned char *qspi_memory_base(void)
+static inline unsigned char *qspi_memory_base(void)
 {
 	return (unsigned char *)CONFIG_SYS_BASE_QSPI_MEM;
 }
 
-static unsigned int qspi_readl(unsigned int reg)
+static inline unsigned int qspi_readl(unsigned int reg)
 {
 	return readl(qspi_get_base() + reg);
 }
 
-static void qspi_writel(unsigned int reg, unsigned int value)
+static inline void qspi_writel(unsigned int reg, unsigned int value)
 {
 	writel(value, qspi_get_base() + reg);
 }
@@ -163,13 +164,13 @@ int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data)
 	qspi_writel(QSPI_IFR, config);
 
 	qspi_readl(QSPI_IFR);	/* To synchronize system bus access */
-
+  BEFORE_DATA_OP:
 	if (data) {
 		membuff = qspi_memory_base() + frame->address;
 		if (data->direction == DATA_DIR_READ)
-			memcpy((unsigned char *)data->buffer, membuff, data->size);
+      memcpy((unsigned char *)data->buffer, membuff, data->size);
 		else if (data->direction == DATA_DIR_WRITE)
-			memcpy(membuff, (unsigned char *)data->buffer, data->size);
+      memcpy(membuff, (unsigned char *)data->buffer, data->size);
 	}
 
 	qspi_writel(QSPI_CR, QSPI_CR_LASTXFER);
@@ -179,3 +180,119 @@ int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data)
 
 	return 0;
 }
+//************************************************************
+//SPI Mode named RAW here
+int qspi_init_raw(unsigned int clock, unsigned int mode)
+{
+  unsigned int config;
+
+  qspi_writel(QSPI_CR, QSPI_CR_QSPIDIS);
+  qspi_writel(QSPI_CR, QSPI_CR_SWRST);
+
+  qspi_clock_init(clock, mode);
+
+  config = QSPI_MR_SMM_SPI | QSPI_MR_CSMODE_LASTXFER | QSPI_MR_WDRBT_ENABLED | QSPI_MR_NBBITS_8_BIT ; 
+  qspi_writel(QSPI_MR, config);
+
+  qspi_writel(QSPI_CR, QSPI_CR_QSPIEN);
+
+  return 0;
+}
+//************************************************************
+int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data)
+{
+  unsigned int config = 0;
+  volatile unsigned char dummy = 0;
+  unsigned char addr[3] = {(frame->address&0xFF0000)>>16,(frame->address&0xFF00)>>8, (frame->address&0xFF) };
+  
+  //Simply run the QSPI bus in a send command/read response way skipping dummy cycles.
+  //Command : instruction + address if any
+  qspi_writel(QSPI_TDR, frame->instruction);
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+  dummy = qspi_readl(QSPI_RDR);
+  //24 bits address for the moment
+  qspi_writel(QSPI_TDR, addr[0]);
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+  dummy = qspi_readl(QSPI_RDR);
+  
+  qspi_writel(QSPI_TDR, addr[1]);
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+  dummy = qspi_readl(QSPI_RDR);
+  
+  qspi_writel(QSPI_TDR, addr[2]);
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+  dummy = qspi_readl(QSPI_RDR);
+
+  //option & Dummy if needed.
+  if (frame->option)
+    while (frame->option_len--) 
+    {
+      qspi_writel(QSPI_TDR, 0xFF);
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+      dummy = qspi_readl(QSPI_RDR);
+    }
+    while (frame->dummy_cycles--) 
+    {
+      qspi_writel(QSPI_TDR, 0xFF);
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+      dummy = qspi_readl(QSPI_RDR);
+    }
+  //Data
+    while (data->size--) 
+    {
+      qspi_writel(QSPI_TDR, *data->buffer);
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
+      while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
+      *data->buffer++ = qspi_readl(QSPI_RDR);
+    }
+
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_TXEMPTY));//Wait send fully done
+  qspi_writel(QSPI_CR, QSPI_CR_LASTXFER);
+
+  return 0;
+}
+// DMA
+int qspi_send_command_raw_dma(qspi_frame_t *frame, qspi_data_t *data)
+{
+  unsigned int config = 0;
+  volatile unsigned char dummy = 0;
+  unsigned char addr[3] = {frame->address>>16, frame->address>>8, frame->address };
+  unsigned char cmd[5];
+  int ret = 0;
+  //Fill the command
+  cmd[0] = frame->instruction;
+  cmd[1] = frame->address >> 16;
+  cmd[2] = frame->address >> 8;
+  cmd[3] = frame->address;
+  cmd[4] = 0x55;//Dummy byte : bin pattern
+  
+  DMA_DEV_IOStream_t readStream;
+  
+  DMA_DEV_OpenSPIIOStream(&readStream, CONFIG_SYS_BASE_QSPI,  CONFIG_SYS_ID_QSPI);
+  
+  ret = DMA_DEV_QSPICommandResponse(&readStream,cmd, frame->cmd_len, data->buffer, data->size);
+  qspi_writel(QSPI_CR, QSPI_CR_LASTXFER);
+  
+  DMA_DEV_CloseSPIIOStream(&readStream);
+  return ret;
+
+}
+//***********************************************************************
+int at91_qspi_oisync (int isActive)
+{
+  unsigned int reg;
+  reg = qspi_readl(QSPI_MR);
+  if (isActive)
+    reg |= QSPI_MR_WDRBT;
+  else
+    reg &= ~QSPI_MR_WDRBT;
+  qspi_writel(QSPI_MR, reg);
+  return 0;
+}
+//************************************************************************

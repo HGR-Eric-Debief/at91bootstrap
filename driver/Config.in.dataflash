@@ -1,10 +1,16 @@
+config CONFIG_DATAFLASH_LOAD_WITH_DMA
+  bool "Use DMA to load DataFlash"
+  depends on ALLOW_WITH_DMA && CONFIG_SPI || CONFIG_QSPI
+  help
+    Dataflash contents will be loaded with DMA help
+
 choice
 	prompt "SPI Interface Select"
 	default	CONFIG_SPI
 
 config CONFIG_SPI
 	bool "Standard SPI Interface"
-	depends on CPU_HAS_SPI0 || CPU_HAS_SPI1 || CPU_HAS_SPI1
+	depends on CPU_HAS_SPI0 || CPU_HAS_SPI1 || CPU_HAS_SPI2
 
 config CONFIG_QSPI
 	bool "Quad SPI Interface"
@@ -14,11 +20,6 @@ endchoice
 
 menu  "SPI configuration"
 	depends on CONFIG_SPI
-config CONFIG_DATAFLASH_LOAD_WITH_DMA
-  bool "Use DMA"
-  depends on ALLOW_WITH_DMA
-  help
-    Dataflash contents will be loaded with DMA help
 
 config	CONFIG_SPI_CLK
 	int "SPI clock speed"
@@ -180,6 +181,18 @@ config CONFIG_SPI_BOOT
 
 endmenu
 
+config SPI_FLASH_ALLOW_SINGLE_QSPI_MODE
+  bool
+  default n
+  
+config SPI_FLASH_ALLOW_DUAL_QSPI_MODE
+  bool
+  default n
+  
+config SPI_FLASH_ALLOW_QUAD_QSPI_MODE
+  bool
+  default n
+  
 menu "QSPI Configuration"
 	depends on CONFIG_QSPI
 
@@ -243,26 +256,45 @@ config CONFIG_QSPI1_IOSET_3
 	bool "QSPI1 IOSET 3"
 
 endchoice
+choice 
+  prompt "QSPI access mode"
+  default CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
+  depends on CONFIG_QSPI
+  help
+    "Set the QSPI access mode, either single(MOSI,MISO) , dual(IO0,IO1)  or quad(IO0,IO1,IO2,IO3). Depends on the board schematic"
+  
+  config CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
+    bool "Single"
+    depends on SPI_FLASH_ALLOW_SINGLE_QSPI_MODE
+
+  config CONFIG_SPI_FLASH_DUAL_QSPI_MODE
+    bool "Dual"
+    depends on SPI_FLASH_ALLOW_DUAL_QSPI_MODE
+    
+  config CONFIG_SPI_FLASH_QUAD_QSPI_MODE
+    bool "Quad"
+    depends on SPI_FLASH_ALLOW_QUAD_QSPI_MODE
+endchoice
 
 endmenu
 
-menu "SPI Flash"
+menu "Serial Flash"
   depends on CONFIG_DATAFLASH
 choice
-  prompt "SPI Flash Parameters"
+  prompt "Serial Flash Parameters"
   default CONFIG_PROBE_PARAMS_SPI_FLASH
   help
-    "Set the actual way to get the SPI Flash parameters (static or probbed)"
+    "Set the actual way to get the Serial Flash parameters (static or probbed)"
 
 config CONFIG_PROBE_PARAMS_SPI_FLASH
   bool "Probed"
   help 
-    "Probe the SPI Flash to set the parameters. Must be a well known one (from ATMEL at this time)"
+    "Probe the Serial Flash to set the parameters. Must be a well known one (from ATMEL at this time)"
     
   config CONFIG_SET_PARAMS_SPI_FLASH
   bool "Configured"
   help 
-    "Set the SPI FLash parameters by configuration"
+    "Set the Serial FLash parameters by configuration"
 endchoice
 
 menu "Configured SPI FLash Parameters"

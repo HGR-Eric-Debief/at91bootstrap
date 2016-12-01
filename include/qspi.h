@@ -45,6 +45,7 @@ typedef enum {
 
 typedef struct qspi_frame {
 	unsigned int instruction;
+  unsigned int cmd_len; //!< Used in raw access mode. Len = instruction length + address lenght + any dummy byte
 	unsigned int option;
 	unsigned int option_len;
 	unsigned int has_address;
@@ -65,7 +66,25 @@ typedef struct qspi_data {
 	unsigned int direction;
 } qspi_data_t;
 
+//Serial Memory Mode
 int qspi_init(unsigned int clock, unsigned int mode);
 int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data);
+
+//SPI Mode
+int qspi_init_raw(unsigned int clock, unsigned int mode);
+int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data);
+int qspi_send_command_raw_dma(qspi_frame_t *frame, qspi_data_t *data);
+
+/**
+ * This function drives the the SPI controller with the Wait Data Read Before Transfer mode.
+ * If active, this will synchronize the Output with the Input, see SPI controller datasheet.
+ * @note this is mandatory for DMA multi-buffers transfers, otherwise data loss can occur at high speeds (above 30MHz).
+ * @param isActive [IN] boolean
+ *  - 0 : disable the  Wait Data Read Before Transfer mode.
+ *  - other : enable the Wait Data Read Before Transfer mode.
+ */
+extern int at91_qspi_oisync (int isActive);
+
+
 
 #endif

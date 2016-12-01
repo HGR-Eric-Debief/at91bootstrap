@@ -301,13 +301,18 @@ do_external_ram_tests_step(void)
   unsigned int test_idx = 0;
   for (test_idx = 0 ; test_idx < PATTERNS_QTY(PATTERNS_32BIT) ; ++test_idx)
   {
-    usart_puts("\n--------------------- NEW 32 bit PATTERN -----------------\n");
+    usart_puts("\n--------------------- NEW 32 bit PATTERN (1 phase) -----------------\n");
     check_32bit_Ram((unsigned int*)AT91C_BASE_DDRCS, CONFIG_RAM_SIZE * MEGA_WORDS, PATTERNS_32BIT[test_idx]);
+  }
+  
+  for (test_idx = 0 ; test_idx < PATTERNS_QTY(PATTERNS_32BIT) ; ++test_idx)
+  {
+    usart_puts("\n--------------------- NEW 32 bit PATTERN (2 phases)-----------------\n");
     check_32bit_Ram_2Phases((unsigned int*)AT91C_BASE_DDRCS, CONFIG_RAM_SIZE * MEGA_WORDS, PATTERNS_32BIT[test_idx]);
     //For test only a sub part of the RAM
     //check_32bit_Ram_2Phases((unsigned int*)AT91C_BASE_DDRCS, (2 * MEGA_WORDS), PATTERNS_32BIT[test_idx]);
   }
-#if 0
+#if 1
   //8 bits
   usart_puts("\n--------------------- NEW 8 bit PATTERN -----------------\n");
   for (test_idx = 0 ; test_idx < PATTERNS_QTY(PATTERNS_8BIT) ; ++test_idx)

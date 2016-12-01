@@ -138,7 +138,7 @@ static const struct peripheral_xdma _xdmac_peripherals[] = {
         { AT91C_ID_TC0,      0xff,   45 },
         { AT91C_ID_TC1,      0xff,   46 },
         { AT91C_ID_CLASSD,     47, 0xff },
-        { AT91C_ID_QSPI0,      48,   49 },
+        { AT91C_ID_QSPI1,      48,   49 },
         { AT91C_ID_PDMIC,    0xff,   50 },
 };
 

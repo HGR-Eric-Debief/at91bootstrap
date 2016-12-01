@@ -31,6 +31,29 @@
 #include "string.h"
 #include "debug.h"
 
+//select the right QSPI access function  according to the QSPI access mode (static polymorphism)
+#if defined CONFIG_SPI_FLASH_SINGLE_QSPI_MODE 
+//#define qspi_flash_loadimage_in_single_mode qspi_flash_loadimage
+//#define qspi_flash_loadimage_in_single_mode_raw qspi_flash_loadimage
+#define qspi_flash_loadimage_in_single_mode_raw_dma qspi_flash_loadimage
+#elif defined CONFIG_SPI_FLASH_DUAL_QSPI_MODE
+#define qspi_flash_loadimage_in_dual_mode qspi_flash_loadimage
+#elif defined CONFIG_SPI_FLASH_QUAD_QSPI_MODE
+#define qspi_flash_loadimage_in_quad_mode qspi_flash_loadimage
+#else
+#error NO QSPI access mode defined.
+#endif
+
+
+/*
+ * SPI Extended Mode Commands (GENERIC)
+ */
+#define CMD_EXTENDED_IO_SLOW_SINGLE_READ 0x03
+#define CMD_EXTENDED_IO_FAST_SINGLE_READ 0x0B
+
+//#define CMD_EXTENDED_IO_SLOW_SINGLE_READ 0x4B
+#define CMD_EXTENDED_IO_FAST_READ 0x0B
+
 /*
  * QSPI Flash Commands (Micron N25Q128A)
  */
@@ -203,19 +226,19 @@ static void qspi_flash_read_jedec_id(void)
 				(data->buffer[0] >> 16) & 0xff);
 }
 
-static int qspi_flash_read_image(struct image_info *image)
+static int qspi_flash_read_image(struct image_info *image, spi_protocols_t access_mode, unsigned int read_instruction_code, unsigned int wait_cycles)
 {
 	qspi_frame_t *frame = &qspi_frame;
 	qspi_data_t *data = &qspi_data;
 
 	qspi_init_frame(frame);
-	frame->instruction = CMD_QUAD_IO_FAST_READ;
+	frame->instruction = read_instruction_code;
 	frame->tansfer_type = read_memory;
 	frame->has_address = 1;
 	frame->address = image->offset;
 	frame->continue_read = 0;
-	frame->dummy_cycles = 10;
-	frame->protocol = quad;
+	frame->dummy_cycles = wait_cycles;
+	frame->protocol = access_mode;
 
 	data->buffer = (unsigned int *)image->dest;
 	data->size = image->length;
@@ -223,8 +246,130 @@ static int qspi_flash_read_image(struct image_info *image)
 
 	return qspi_send_command(frame, data);
 }
+//Read image in RAW mode
+static int qspi_flash_read_image_raw(struct image_info *image, spi_protocols_t access_mode, unsigned int read_instruction_code, unsigned int wait_cycles)
+{
+  qspi_frame_t *frame = &qspi_frame;
+  qspi_data_t *data = &qspi_data;
 
-int qspi_flash_loadimage(struct image_info *image)
+  qspi_init_frame(frame);
+  frame->instruction = read_instruction_code;
+  frame->tansfer_type = read_memory;
+  frame->has_address = 1;
+  frame->address = image->offset;
+  frame->continue_read = 0;
+  frame->dummy_cycles = wait_cycles;
+  frame->protocol = access_mode;
+
+  data->buffer = (unsigned int *)image->dest;
+  data->size = image->length;
+  data->direction = DATA_DIR_READ;
+
+  return qspi_send_command_raw(frame, data);
+}
+//************************ SPI command/Respond with DMA ****
+//Read image in RAW mode
+static int qspi_flash_read_image_raw_dma(struct image_info *image, spi_protocols_t access_mode, unsigned int read_instruction_code, unsigned int wait_cycles)
+{
+  qspi_frame_t *frame = &qspi_frame;
+  qspi_data_t *data = &qspi_data;
+
+  qspi_init_frame(frame);
+  frame->instruction = read_instruction_code;
+  frame->tansfer_type = read_memory;
+  frame->has_address = 1;
+  frame->address = image->offset;
+  frame->continue_read = 0;
+  frame->dummy_cycles = wait_cycles;
+  frame->cmd_len = 1 + 3 + frame->dummy_cycles;  //CMD(1 byte) Addr(3B) + any dummy bytes
+
+  data->buffer = (unsigned int *)image->dest;
+  data->size = image->length;
+
+  return qspi_send_command_raw_dma(frame, data);
+}
+
+
+
+/*
+ * Load the image through QSPI bus in single access mode.
+ */
+int qspi_flash_loadimage_in_single_mode(struct image_info *image)
+{
+  int ret;
+
+  at91_qspi_hw_init();
+
+  qspi_init(CONFIG_SYS_QSPI_CLOCK, CONFIG_SYS_QSPI_MODE);
+
+  qspi_flash_read_jedec_id();
+
+  //HYP the flash is in single access mode by default.
+  dbg_info("QSPI Flash: Access in Single/Extended SPI mode\n");
+
+  dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
+      image->length, image->offset, image->dest);
+
+  ret = qspi_flash_read_image(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
+  if (ret)
+    return -1;
+
+  return 0;
+}
+//Load in single RAW mode
+int qspi_flash_loadimage_in_single_mode_raw(struct image_info *image)
+{
+  int ret;
+
+  at91_qspi_hw_init();
+
+  qspi_init(CONFIG_SYS_QSPI_CLOCK, CONFIG_SYS_QSPI_MODE);
+
+  qspi_flash_read_jedec_id();
+  
+  //Reinit in raw for further operations
+  qspi_init_raw(CONFIG_SYS_QSPI_CLOCK, CONFIG_SYS_QSPI_MODE);
+
+  //HYP the flash is in single access mode by default.
+  dbg_info("QSPI Flash: Access in Single/Extended SPI mode\n");
+
+  dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
+      image->length, image->offset, image->dest);
+
+  ret = qspi_flash_read_image_raw(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
+  if (ret)
+    return -1;
+
+  return 0;
+}
+//Load in single RAW mode
+int qspi_flash_loadimage_in_single_mode_raw_dma(struct image_info *image)
+{
+  int ret;
+
+  at91_qspi_hw_init();
+
+  qspi_init(CONFIG_SYS_QSPI_CLOCK, CONFIG_SYS_QSPI_MODE);
+
+  qspi_flash_read_jedec_id();
+  
+  //Reinit in raw for further operations
+  qspi_init_raw(CONFIG_SYS_QSPI_CLOCK, CONFIG_SYS_QSPI_MODE);
+
+  //HYP the flash is in single access mode by default.
+  dbg_info("QSPI Flash: Access in Single/Extended SPI mode with DMA\n");
+
+  dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
+      image->length, image->offset, image->dest);
+
+  ret = qspi_flash_read_image_raw_dma(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
+  if (ret)
+    return -1;
+
+  return 0;
+}
+//Load the flash (MICRON only) in quad mode.
+int qspi_flash_loadimage_in_quad_mode(struct image_info *image)
 {
 	int ret;
 
@@ -243,7 +388,7 @@ int qspi_flash_loadimage(struct image_info *image)
 	dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
 			image->length, image->offset, image->dest);
 
-	ret = qspi_flash_read_image(image);
+	ret = qspi_flash_read_image(image, quad, CMD_QUAD_IO_FAST_READ, 10);
 	if (ret)
 		return -1;
 

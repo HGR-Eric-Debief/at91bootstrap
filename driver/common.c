@@ -140,10 +140,14 @@ void init_load_image(struct image_info *image)
   image->dest -= sizeof(at91_secure_header_t);
 #endif
 
-
+#if defined CONFIG_TEST_FIRMWARE_LOAD_LOOP
+  //Clear the destination area
+  memset(image->dest, 0x00, image->length);
+#endif
 }
 
 //************************************************************
+#if defined CONFIG_FIRMWARE_LOAD_VALIDATION
 /**
  * @brief this function will compare the given area with the expected value. 
  * 
@@ -169,6 +173,7 @@ static unsigned int check_area(unsigned char* toCheck, const unsigned int length
   }
  return errorCount;
 }
+#endif /*CONFIG_FIRMWARE_LOAD_VALIDATION*/
 //************************************************************
 void load_image_done(struct image_info *image, int retval)
 {
