@@ -190,7 +190,7 @@ DMA_DEV_CloseSPIIOStream(DMA_DEV_IOStream_t* const stream)
 {
   xdmad_stop_transfer(stream->RxChannel);
   xdmad_free_channel(stream->RxChannel);
-
+  
   xdmad_stop_transfer(stream->TxChannel);
   xdmad_free_channel(stream->TxChannel);
 }
@@ -577,3 +577,70 @@ START:
 }
 #endif /* CONFIG_QPSI */
 //***************************************************************
+unsigned int
+DMA_MEM_copy(void* dest, void* source, unsigned int len)
+{
+  //Simple memory copy : only one channel
+  struct _xdmad_channel* copyChannel = NULL;
+  unsigned int dmaResult = 0;
+  //The common configuration 
+  struct _xdmad_cfg copy_config = {
+    .ublock_size = len,
+    .block_size = 0, //Only one block
+    .data_stride = 0, //no data stride
+    .src_ublock_stride = 0,
+    .dest_ublock_stride = 0,
+    .src_addr = source,
+    .dest_addr = dest,
+    .cfg.uint32_value = XDMAC_CC_PERID(XDMAD_PERIPH_MEMORY)
+    | XDMAC_CC_TYPE_MEM_TRAN
+    | XDMAC_CC_MEMSET_NORMAL_MODE
+    | XDMAC_CC_MBSIZE_SIXTEEN //XDMAC_CC_MBSIZE_SINGLE
+    | XDMAC_CC_CSIZE_CHK_16 //XDMAC_CC_CSIZE_CHK_16
+    | XDMAC_CC_DWIDTH_BYTE
+    | XDMAC_CC_DIF_AHB_IF0
+    | XDMAC_CC_SIF_AHB_IF1
+    | XDMAC_CC_SAM_INCREMENTED_AM
+    | XDMAC_CC_DAM_INCREMENTED_AM
+  };
+  //Init the xdmad layer : Not thread safe !!
+  xdmad_initialize();
+  //cache management if needed
+#if defined (CONFIG_WITH_CACHE)
+  cp15_flush_dcache_for_dma((unsigned int) source, (unsigned int)source + len);
+  cp15_invalidate_dcache_for_dma((unsigned int) dest, (unsigned int)dest + len);
+#endif
+  //Channel allocation
+  copyChannel = xdmad_allocate_channel(XDMAD_PERIPH_MEMORY, XDMAD_PERIPH_MEMORY);
+  if (copyChannel == NULL)
+  {
+    dbg_log(DEBUG_ERROR,"DMA channel allocation error\n");
+    return 1;
+  }
+  xdmad_prepare_channel(copyChannel);
+  //Setup the copy : simple DMA transfer.
+  dmaResult = xdmad_configure_transfer(copyChannel, &copy_config, 0, NULL);
+
+  dbg_log(DEBUG_VERY_LOUD, "DBG: xdmad_configure_transfer()=>%d\n",dmaResult);
+  if (dmaResult != XDMAD_OK)
+  {
+      goto EXIT_POINT;
+  }
+  dmaResult = xdmad_start_transfer(copyChannel);
+  dbg_log(DEBUG_VERY_LOUD, "DBG : xdmad_start_transfer()=>%d\n", dmaResult );
+  if (dmaResult  != XDMAD_OK)
+    goto EXIT_POINT;
+  //Wait the end of the transfer : operation is synchronous. RX and TX done.
+  while (!xdmad_is_transfer_done(copyChannel))
+  {
+    xdmad_poll();
+  }
+  // Copy done, release resources.
+  xdmad_stop_transfer(copyChannel);
+  
+  EXIT_POINT:
+  xdmad_free_channel(copyChannel);
+  copyChannel = NULL;
+  return 0;
+}
+//****************************************************************

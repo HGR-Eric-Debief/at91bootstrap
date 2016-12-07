@@ -38,9 +38,13 @@ typedef	enum {
 } tansfer_type_t;
 
 typedef enum {
-	extended = 0,
-	dual,
-	quad,
+	extended = 0, //!< Single bit I/O
+  dual_output, //!< Single bit input, dual output
+  dual_io, //!< Single cmd, dual I/O
+	dual, //!< Dual input/output
+	quad_output, //!< Single input, Quad Output
+  quad_io, //!< Single cmd, quad I/O
+  quad, //!< Quad input/output
 } spi_protocols_t;
 
 typedef struct qspi_frame {
@@ -61,7 +65,7 @@ typedef struct qspi_frame {
 #define	DATA_DIR_WRITE		0x22
 
 typedef struct qspi_data {
-	unsigned int *buffer;
+	unsigned int* buffer;
 	unsigned int size;
 	unsigned int direction;
 } qspi_data_t;
@@ -69,9 +73,11 @@ typedef struct qspi_data {
 //Serial Memory Mode
 int qspi_init(unsigned int clock, unsigned int mode);
 int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data);
+int qspi_send_command_dma(qspi_frame_t *frame, qspi_data_t *data);
 
 //SPI Mode
 int qspi_init_raw(unsigned int clock, unsigned int mode);
+int qspi_init_dual_raw(unsigned int clock, unsigned int mode);
 int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data);
 int qspi_send_command_raw_dma(qspi_frame_t *frame, qspi_data_t *data);
 

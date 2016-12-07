@@ -94,7 +94,7 @@ int qspi_init(unsigned int clock, unsigned int mode)
 
 	qspi_clock_init(clock, mode);
 
-	config = QSPI_MR_SMM_MEMORY; 
+	config = QSPI_MR_SMM_MEMORY | QSPI_MR_DLYCS; 
 	qspi_writel(QSPI_MR, config);
 
 	qspi_writel(QSPI_CR, QSPI_CR_QSPIEN);
@@ -181,8 +181,116 @@ int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data)
 	return 0;
 }
 //************************************************************
+int qspi_send_command_dma(qspi_frame_t *frame, qspi_data_t *data)
+{
+  unsigned int instruction = 0;
+  unsigned int config = 0;
+  unsigned char *membuff;
+#if 0
+  static unsigned char testDest[1024];
+  static unsigned char testSource[1024];
+  
+  //For test
+  memset(testSource,0xED, 1024);
+  DMA_MEM_copy(testDest, testSource, 1024);
+#endif
+
+  if (frame->protocol == extended)
+    config |= QSPI_IFR_WIDTH_SINGLE_BIT_SPI;
+  else  if (frame->protocol == dual_output)
+    config |= QSPI_IFR_WIDTH_DUAL_OUTPUT;
+  else  if (frame->protocol == dual)
+    config |= QSPI_IFR_WIDTH_DUAL_CMD;
+  else  if (frame->protocol == quad_output)
+    config |= QSPI_IFR_WIDTH_QUAD_OUTPUT;
+  else  if (frame->protocol == quad)
+    config |= QSPI_IFR_WIDTH_QUAD_CMD;
+
+  if (frame->instruction) {
+    config |= QSPI_IFR_INSTEN;
+    instruction |= QSPI_ICR_INST_(frame->instruction);
+  }
+
+  if (frame->has_address) {
+    config |= QSPI_IFR_ADDREN;
+    if ((!data))
+      qspi_writel(QSPI_IAR, frame->address);
+  }
+
+  if (data)
+    config |= QSPI_IFR_DATAEN;
+
+  if (frame->option) {
+    config |= QSPI_IFR_OPTEN;
+    instruction |= QSPI_ICR_OPT_(frame->option);
+  }
+
+  if (frame->option_len == 1)
+    config |= QSPI_IFR_OPTL_1BIT;
+  else if (frame->option_len == 2)
+    config |= QSPI_IFR_OPTL_2BIT;
+  else if (frame->option_len == 4)
+    config |= QSPI_IFR_OPTL_4BIT;
+  else if (frame->option_len == 8)
+    config |= QSPI_IFR_OPTL_8BIT;
+
+  if (frame->address_len)
+    config |= QSPI_IFR_ADDRL_32_BIT;
+
+  if (frame->tansfer_type == read)
+    config |= QSPI_IFR_TFRTYPE_READ;
+  else if (frame->tansfer_type == read_memory)
+    config |= QSPI_IFR_TFRTYPE_READ_MEMORY;
+  else if (frame->tansfer_type == write)
+    config |= QSPI_IFR_TFRTYPE_WRITE;
+  else if (frame->tansfer_type == write_memory)
+    config |= QSPI_IFR_TFRTYPE_WRITE_MEMORY;
+
+  if (frame->continue_read)
+    config |= QSPI_IFR_CRM;
+
+  config |= QSPI_IFR_NBDUM_(frame->dummy_cycles);
+
+  qspi_writel(QSPI_ICR, instruction);
+  qspi_writel(QSPI_IFR, config);
+
+  qspi_readl(QSPI_IFR); /* To synchronize system bus access */
+  BEFORE_DATA_OP:
+  if (data) {
+    membuff = qspi_memory_base() + frame->address;
+    if (data->direction == DATA_DIR_READ)
+      DMA_MEM_copy(data->buffer, membuff, data->size);
+    else if (data->direction == DATA_DIR_WRITE)
+      DMA_MEM_copy(membuff, data->buffer, data->size);
+  }
+
+  qspi_writel(QSPI_CR, QSPI_CR_LASTXFER);
+
+  while (!(qspi_readl(QSPI_SR) & QSPI_SR_INSTRE))
+    ;
+
+  return 0;
+}
+//************************************************************
 //SPI Mode named RAW here
 int qspi_init_raw(unsigned int clock, unsigned int mode)
+{
+  unsigned int config;
+
+  qspi_writel(QSPI_CR, QSPI_CR_QSPIDIS);
+  qspi_writel(QSPI_CR, QSPI_CR_SWRST);
+
+  qspi_clock_init(clock, mode);
+
+  config = QSPI_MR_SMM_SPI | QSPI_MR_CSMODE_LASTXFER | QSPI_MR_WDRBT_ENABLED | QSPI_MR_NBBITS_8_BIT ; 
+  qspi_writel(QSPI_MR, config);
+
+  qspi_writel(QSPI_CR, QSPI_CR_QSPIEN);
+
+  return 0;
+}
+//************************************************************
+int qspi_init_dual_raw(unsigned int clock, unsigned int mode)
 {
   unsigned int config;
 
@@ -203,7 +311,8 @@ int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data)
 {
   unsigned int config = 0;
   volatile unsigned char dummy = 0;
-  unsigned char addr[3] = {(frame->address&0xFF0000)>>16,(frame->address&0xFF00)>>8, (frame->address&0xFF) };
+  unsigned char addr[3] = {(frame->address)>>16,(frame->address)>>8, (frame->address) };
+  unsigned char* destBuffer = (unsigned char*)data->buffer;
   
   //Simply run the QSPI bus in a send command/read response way skipping dummy cycles.
   //Command : instruction + address if any
@@ -246,10 +355,10 @@ int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data)
   //Data
     while (data->size--) 
     {
-      qspi_writel(QSPI_TDR, *data->buffer);
+      qspi_writel(QSPI_TDR, *destBuffer);
       while (!(qspi_readl(QSPI_SR) & QSPI_SR_TDRE));//Wait send done
       while (!(qspi_readl(QSPI_SR) & QSPI_SR_RDRF));
-      *data->buffer++ = qspi_readl(QSPI_RDR);
+      *destBuffer++ = qspi_readl(QSPI_RDR);
     }
 
   while (!(qspi_readl(QSPI_SR) & QSPI_SR_TXEMPTY));//Wait send fully done

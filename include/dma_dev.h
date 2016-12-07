@@ -121,4 +121,12 @@ DMA_DEV_QSPICommandResponse( const DMA_DEV_IOStream_t* const stream, void* toSen
     const unsigned int recvLength);
 #endif /*CONFIG_QSPI*/
 
+unsigned int
+/**
+ * This function will do a memory copy with the DMA. Return when done.
+ * @param dest [IN] The address of the destination area
+ * @param source [IN] The address of the source area
+ * @param len [IN] The length (in bytes) of the source area.
+ */
+DMA_MEM_copy(void* dest, void* source, unsigned int len);
 #endif /*SPI_DEV_DMA_H_*/
