@@ -125,9 +125,15 @@ OBJDUMP=$(CROSS_COMPILE)objdump
 PROJECT := $(strip $(subst ",,$(CONFIG_PROJECT)))
 
 ifeq ($(CONFIG_LOAD_BEEAVE),y)
-#BeeAVE specific parameters
+#BeeAVE specific parameters, reduced size for TEST and from begining
 IMG_ADDRESS := 0x10000
-IMG_SIZE := 0x100000
+#IMG_SIZE := 0x100000
+## Size given from the file BeeAVE.bin
+IMG_SIZE := 850000
+
+##Below : two lines for tests.
+#IMG_ADDRESS := 0x00000000
+#IMG_SIZE := 0x40
 JUMP_ADDR := 0x20000000
 else
 IMG_ADDRESS := $(strip $(subst ",,$(CONFIG_IMG_ADDRESS)))
@@ -285,6 +291,7 @@ endif
 ifeq ($(SYMLINK),)
 SYMLINK=at91bootstrap.bin
 SYMLINK_ELF=at91bootstrap.elf
+SYMLINK_MAP=at91bootstrap.map
 endif
 
 ifeq ($(SYMLINK_BOOT),)
@@ -322,6 +329,7 @@ CPPFLAGS += -Os
 #CPPFLAGS += -g -Os
 else
 CPPFLAGS += -g3 -O0
+ASFLAGS += -g
 endif
 
 include	toplevel_cpp.mk
@@ -392,6 +400,7 @@ endif
 	@echo Driver config
 	@echo ========
 	@echo SPI_CLCK : $(SPI_CLK)
+	@echo QSPI_CLCK : $(QSPI_CLK)
 	@echo SPI_BOOT : $(SPI_BOOT) && echo
 	@echo CC
 	@echo ========
@@ -406,7 +415,9 @@ endif
 	@echo ========
 	@echo $(LDFLAGS) && echo
 	@echo ======
-	@echo Sources : $(SRCS) && echo
+	@echo Sources : $(SRCS) && echo	
+	@echo ======
+	@echo Firmware : $(IMG_SIZE) bytes from $(IMG_ADDRESS) in Flash to $(JUMP_ADDR) in RAM && echo		
 	@echo ======
 	@echo Boot name : $(BOOT_NAME)
 	
@@ -419,7 +430,8 @@ $(AT91BOOTSTRAP): $(OBJS)
 	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK}
 	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK_BOOT}
 	@ln -sf $(BOOT_NAME).elf ${BINDIR}/${SYMLINK_ELF}
-
+	@ln -sf $(BOOT_NAME).map ${BINDIR}/${SYMLINK_MAP}
+	
 %.o : %.c .config
 	@echo "  CC        "$<
 	@$(CC) $(CPPFLAGS) -c -o $@ $<
