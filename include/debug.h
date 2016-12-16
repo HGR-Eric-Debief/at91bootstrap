@@ -54,6 +54,9 @@ static inline void dbg_hexdump(const unsigned char *buf,
 		(level) <= BOOTSTRAP_DEBUG_LEVEL ? dbg_printf((fmt_str), ##args) : 0; \
 	})
 
+#define dbg_error(fmt_str, arg...)   \
+  dbg_log(DEBUG_ERROR, fmt_str , ## arg)
+
 #define dbg_info(fmt_str, arg...)		\
 	dbg_log(DEBUG_INFO, fmt_str , ## arg)
 #define dbg_loud(fmt_str, arg...)		\

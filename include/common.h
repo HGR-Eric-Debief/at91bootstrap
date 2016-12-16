@@ -71,8 +71,10 @@ struct image_info
 //Choose the loader function
 #if defined(CONFIG_ONLY_INTERNAL_RAM) || defined(CONFIG_UPLOAD_3RD_STAGE)
 
+extern int load_nothing (struct image_info* unused);
 //! Nothing to load at all.
 #define load_image load_nothing
+
 
 #else
 
