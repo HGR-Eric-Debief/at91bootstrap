@@ -462,6 +462,28 @@ void at91_qspi_hw_init(void)
 	pio_configure(qspi_pins);
 	pmc_sam9x5_enable_periph_clk(AT91C_ID_QSPI1);
 }
+
+void at91_qspi_hw_deinit(void)
+{
+  //Return to RESET state (INPUT, 1)
+#if defined(CONFIG_QSPI_BUS1) && defined(CONFIG_QSPI1_IOSET_2)
+  const struct pio_desc qspi_pins[] = {
+    {"QSPI1_SCK", AT91C_PIN_PB(5),  1, PIO_DRVSTR, PIO_INPUT},
+    {"QSPI1_CS",  AT91C_PIN_PB(6),  1, PIO_DRVSTR, PIO_INPUT},
+    {"QSPI1_IO0", AT91C_PIN_PB(7),  1, PIO_DRVSTR, PIO_INPUT},
+    {"QSPI1_IO1", AT91C_PIN_PB(8),  1, PIO_DRVSTR, PIO_INPUT},
+    {"QSPI1_IO2", AT91C_PIN_PB(9),  1, PIO_DRVSTR, PIO_INPUT},
+    {"QSPI1_IO3", AT91C_PIN_PB(10), 1, PIO_DRVSTR, PIO_INPUT},
+    PIO_DESCRIPTION_END,
+  };
+#else
+#error "Only QSPI1 on IOSet 2 used !!"
+#endif
+  pmc_sam9x5_disable_periph_clk(AT91C_ID_QSPI1);
+  pio_configure(qspi_pins);
+
+}
+
 #endif
 #endif
 

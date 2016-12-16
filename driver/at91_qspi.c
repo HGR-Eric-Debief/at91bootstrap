@@ -102,6 +102,12 @@ int qspi_init(unsigned int clock, unsigned int mode)
 	return 0;
 }
 
+int qspi_deinit(void)
+{
+  qspi_writel(QSPI_CR, QSPI_CR_QSPIDIS);
+  return 0;
+}
+
 int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data)
 {
 	unsigned int instruction = 0;

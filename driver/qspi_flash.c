@@ -143,7 +143,7 @@ static unsigned int qspi_flash_write_status_regs(unsigned char sr1Value, unsigne
 {
   qspi_frame_t *frame = &qspi_frame;
   qspi_data_t *data = &qspi_data;
-  unsigned int waitLoop = 20;
+  unsigned int waitLoop = 2000;
   unsigned char status = 0;
 
   qspi_init_frame(frame);
@@ -224,44 +224,43 @@ static int qspi_flash_enable_write(unsigned char writeEnableCmd)
 		return -1;
 }
 
-static int qspi_flash_enable_quad_mode(unsigned int enable)
+static int qspi_flash_set_quad_mode(unsigned int enable)
 {
-	unsigned short config;
+	unsigned char sr1Value;
+	unsigned char sr2Value;
 	unsigned char check_bits;
-	int ret;
+	int ret = 0;
 
-  //Do it always !
-#if 0
-  for (;;)
-  {//TEST
-    config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-    config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
-    ret = qspi_flash_enable_write(CMD_WRITE_ENABLE);
-    config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-    //qspi_flash_enable_write(CMD_WRITE_ENABLE);
-    qspi_flash_write_status_regs(0, WINBOND_BIT_QE);
-    qspi_flash_enable_write(CMD_WRITE_DISABLE);
-    qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-    config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
-  }
-#endif
+ //Do the change only if needed.
+ sr2Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
+ if ((enable && (sr2Value & WINBOND_BIT_QE) || !enable && !(sr2Value & WINBOND_BIT_QE)))
+ {
+   dbg_very_loud("QSPI quad mode : nothing to do\n");
+   return ret; //EXIT HERE
+ }
+   dbg_very_loud("QSPI quad mode : change required\n");
+ 
  ret = qspi_flash_enable_write(CMD_WRITE_ENABLE);
  if (ret)
     return -1;
     
- config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
- config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
+ sr1Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
+ 
 	if (enable)
-		config |= WINBOND_BIT_QE;
+		sr2Value|= WINBOND_BIT_QE;
 	else
-		config &= ~WINBOND_BIT_QE;
+		sr2Value &= ~WINBOND_BIT_QE;
   
-	qspi_flash_write_status_regs(0,config);
+	if (qspi_flash_write_status_regs(sr1Value,sr2Value))
+  {
+    //MUST NEVER HAPPENS !! check wait loop counter value.
+    asm("BKPT");
+  }
   
-	config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-  config = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
+	sr1Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
+  sr2Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
   
-	check_bits = (config & WINBOND_BIT_QE) ? 0x01 : 0x00;
+	check_bits = (sr2Value & WINBOND_BIT_QE) ? 0x01 : 0x00;
 
 	return (enable ^ check_bits);
 }
@@ -425,10 +424,12 @@ int qspi_flash_loadimage_in_single_mode_smm(struct image_info *image)
 
   ret = qspi_flash_read_image(image, extended, CMD_EXTENDED_IO_SLOW_SINGLE_READ, 0);
   //ret = qspi_flash_read_image(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
-  if (ret)
-    return -1;
+  //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+  return ret ? -1 : 0;
 }
 /*
  * Load the image through QSPI bus in single access Serial Memory mode + DMA
@@ -450,10 +451,12 @@ int qspi_flash_loadimage_in_single_mode_smm_dma(struct image_info *image)
       image->length, image->offset, image->dest);
   ret = qspi_flash_read_image_dma(image, extended, CMD_EXTENDED_IO_SLOW_SINGLE_READ, 0);
   //ret = qspi_flash_read_image_dma(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
-  if (ret)
-    return -1;
+  //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+  return ret ? -1 : 0;
 }
 /*
  * Load the image through QSPI bus in DUAL access Serial Memory mode + DMA
@@ -476,10 +479,13 @@ int qspi_flash_loadimage_in_dual_mode_smm_dma(struct image_info *image)
 
   //ret = qspi_flash_read_image_dma(image, dual_output, CMD_DUAL_OUTPUT_FAST_READ, 1);
   ret = qspi_flash_read_image_dma(image, dual_output, CMD_DUAL_OUTPUT_FAST_READ, 1);
-  if (ret)
-    return -1;
+ 
+  //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+  return ret ? -1 : 0;
 }
 //Load in single RAW mode
 int qspi_flash_loadimage_in_single_mode_raw(struct image_info *image)
@@ -502,10 +508,12 @@ int qspi_flash_loadimage_in_single_mode_raw(struct image_info *image)
       image->length, image->offset, image->dest);
 
   ret = qspi_flash_read_image_raw(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
-  if (ret)
-    return -1;
+ //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+  return ret ? -1 : 0;
 }
 //Load in single RAW mode + DMA.
 int qspi_flash_loadimage_in_single_mode_raw_dma(struct image_info *image)
@@ -528,13 +536,17 @@ int qspi_flash_loadimage_in_single_mode_raw_dma(struct image_info *image)
       image->length, image->offset, image->dest);
 
   ret = qspi_flash_read_image_raw_dma(image, extended, CMD_EXTENDED_IO_FAST_SINGLE_READ, 1);
-  if (ret)
-    return -1;
+  
+ //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+
+  return ret ? -1 : 0;
 }
 
-//Load the flash (MICRON only) in quad mode.
+//Load the flash (MICRON only) in quad mode. TO BE REMMOVED for this version. TODO : Two files : MICRON and Winbond.
 int qspi_flash_loadimage_in_quad_mode(struct image_info *image)
 {
 	int ret;
@@ -545,65 +557,66 @@ int qspi_flash_loadimage_in_quad_mode(struct image_info *image)
 
 	qspi_flash_read_jedec_id();
 
-	ret = qspi_flash_enable_quad_mode(0x01);
+	ret = qspi_flash_set_quad_mode(0x01);
 	if (ret)
 		return -1;
   
-  //TEST Loop
-for(;;)
-{
-
-	dbg_info("QSPI Flash: Switch to Quad SPI mode\n");
+ 
+	dbg_loud("QSPI Flash: Switch to Quad SPI mode\n");
 
 	dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
 			image->length, image->offset, image->dest);
 
 	ret = qspi_flash_read_image(image, quad_output, CMD_QUAD_OUTPUT_FAST_READ, 8);
-	if (ret)
-		return -1;
-}
-	ret = qspi_flash_enable_quad_mode(0);
-	if (ret)
-		return -1;
 
-	dbg_info("QSPI Flash: Switch to Extended SPI mode\n");
+	ret = qspi_flash_set_quad_mode(0);
 
-	return 0;
+	dbg_loud("QSPI Flash: Switch to Extended SPI mode\n");
+  
+ //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
+ 
+	return ret ? -1 : 0;
 }
 //Load the flash in quad mode (DMA)
 int qspi_flash_loadimage_in_quad_mode_dma(struct image_info *image)
 {
   int ret;
-  unsigned int dummyCycleQty = 8;
+  const unsigned int dummyCycleQty = 8;
 
   at91_qspi_hw_init();
 
   qspi_init(AT91C_QSPI_CLK, SPI_MODE3);
 
   qspi_flash_read_jedec_id();
+  
 
-  ret = qspi_flash_enable_quad_mode(0x01);
+#if 1
+  ret = qspi_flash_set_quad_mode(0x01);
   if (ret)
     return -1;
-  
-  //TEST Loop
-for(;;)
-{
 
-  dbg_info("QSPI Flash: Switch to Quad SPI mode\n");
+  dbg_loud("QSPI Flash: Switch to Quad SPI mode\n");
+#endif
 
   dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
       image->length, image->offset, image->dest);
 
   ret = qspi_flash_read_image_dma(image, quad_output, CMD_QUAD_OUTPUT_FAST_READ, dummyCycleQty);//8
+  
+#if 0
+  ret = qspi_flash_set_quad_mode(0);
   if (ret)
     return -1;
-}
-  ret = qspi_flash_enable_quad_mode(0);
-  if (ret)
-    return -1;
+  dbg_loud("QSPI Flash: Switch to Extended SPI mode\n");
+#endif
 
-  dbg_info("QSPI Flash: Switch to Extended SPI mode\n");
+ //Disable the QSPI unit.
+ dbg_loud("QSPI Flash: DeInit\n");
+ qspi_deinit();
+ at91_qspi_hw_deinit();
 
-  return 0;
+  return ret ? -1 : 0;
 }

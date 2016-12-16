@@ -118,6 +118,8 @@ extern void nandflash_hw_init(void);
 extern void at91_spi0_hw_init(void);
 
 extern void at91_qspi_hw_init(void);
+extern void at91_qspi_hw_deinit(void);
+
 
 extern void at91_mci0_hw_init(void);
 

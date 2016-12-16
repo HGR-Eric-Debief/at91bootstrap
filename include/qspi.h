@@ -81,6 +81,9 @@ int qspi_init_dual_raw(unsigned int clock, unsigned int mode);
 int qspi_send_command_raw(qspi_frame_t *frame, qspi_data_t *data);
 int qspi_send_command_raw_dma(qspi_frame_t *frame, qspi_data_t *data);
 
+//De init the QSPI unit.
+int qspi_deinit(void);
+
 /**
  * This function drives the the SPI controller with the Wait Data Read Before Transfer mode.
  * If active, this will synchronize the Output with the Input, see SPI controller datasheet.
