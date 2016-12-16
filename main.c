@@ -91,12 +91,12 @@ static void display_banner (void)
 #else
   static const char* const bus_clock_msg = "Bus: UNKNOWN";
 #endif
-	usart_puts("\n\n");
+	usart_puts("\n");
 	usart_puts(version);
 	usart_puts(ver_num);
 	usart_puts(core_clock_msg);
   usart_puts(bus_clock_msg);
-	usart_puts("\n\n");
+	usart_puts("\n");
 }
 //**************************************************************************
 int main(void)
@@ -237,6 +237,8 @@ for(;;)
 	slowclk_switch_osc32();
 #endif
   
+dbg_error("FW upload done, let's start\n");
+//asm("BKPT");
 #if defined(CONFIG_ENTER_NWD)
 	switch_normal_world();
 	/* point never reached with TZ support */
