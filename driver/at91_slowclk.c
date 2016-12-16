@@ -110,7 +110,7 @@ static int slowclk_select_osc32(void)
 
 int slowclk_switch_osc32(void)
 {
-#if defined(SAMA5D4)
+#if defined(SAMA5D4) || defined(SAMA5D2)
 	slowclk_select_osc32();
 #else
 	slowclk_wait_osc32_stable();
