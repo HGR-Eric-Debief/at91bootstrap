@@ -33,6 +33,7 @@
 #include "string.h"
 #include "arch/at91_qspi.h"
 #include "dma_dev.h"
+#include "debug.h"
 
 #ifndef CONFIG_SYS_BASE_QSPI
 #define CONFIG_SYS_BASE_QSPI		AT91C_BASE_QSPI0
@@ -115,11 +116,20 @@ int qspi_send_command(qspi_frame_t *frame, qspi_data_t *data)
 	unsigned char *membuff;
 
 	if (frame->protocol == extended)
-		config |= QSPI_IFR_WIDTH_SINGLE_BIT_SPI;
-	else  if (frame->protocol == dual)
-		config |= QSPI_IFR_WIDTH_DUAL_CMD;
-	else  if (frame->protocol == quad)
-		config |= QSPI_IFR_WIDTH_QUAD_CMD;
+    config |= QSPI_IFR_WIDTH_SINGLE_BIT_SPI;
+  else  if (frame->protocol == dual_output)
+    config |= QSPI_IFR_WIDTH_DUAL_OUTPUT;
+  else  if (frame->protocol == dual)
+    config |= QSPI_IFR_WIDTH_DUAL_CMD;
+  else  if (frame->protocol == quad_output)
+    config |= QSPI_IFR_WIDTH_QUAD_OUTPUT;
+  else  if (frame->protocol == quad)
+    config |= QSPI_IFR_WIDTH_QUAD_CMD;
+  else
+  {
+    dbg_error(" qspi_send_command() : %d : unknown protocol !!\n",frame->protocol);
+    asm("BKPT"); //Not a known protocol
+  }
 
 	if (frame->instruction) {
 		config |= QSPI_IFR_INSTEN;
@@ -211,6 +221,11 @@ int qspi_send_command_dma(qspi_frame_t *frame, qspi_data_t *data)
     config |= QSPI_IFR_WIDTH_QUAD_OUTPUT;
   else  if (frame->protocol == quad)
     config |= QSPI_IFR_WIDTH_QUAD_CMD;
+  else
+  {
+    dbg_error(" qspi_send_command() : %d : unknown protocol !!\n",frame->protocol);
+    asm("BKPT"); //Not a known protocol
+  }
 
   if (frame->instruction) {
     config |= QSPI_IFR_INSTEN;
