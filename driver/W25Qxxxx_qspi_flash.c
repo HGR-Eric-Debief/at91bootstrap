@@ -529,7 +529,10 @@ int qspi_flash_loadimage_in_quad_mode_smm(struct image_info *image)
 
 	ret = qspi_flash_set_quad_mode(0x01);
 	if (ret)
-		return -1;
+	{
+    dbg_error("QSPI Flash:  Can't set the quad mode !!\n");
+    goto EXIT_POINT;
+  }
   
  
 	dbg_loud("QSPI Flash: Switch to Quad SPI mode\n");
@@ -546,7 +549,7 @@ int qspi_flash_loadimage_in_quad_mode_smm(struct image_info *image)
   dbg_loud("QSPI Flash: Switch to Extended SPI mode\n");
 #endif
 
-  
+EXIT_POINT:
  //Disable the QSPI unit.
  dbg_loud("QSPI Flash: DeInit\n");
  qspi_deinit();
@@ -570,10 +573,13 @@ int qspi_flash_loadimage_in_quad_mode_smm_dma(struct image_info *image)
 #if 1
   ret = qspi_flash_set_quad_mode(0x01);
   if (ret)
-    return -1;
-
+  {
+    dbg_error("QSPI Flash:  Can't set the quad mode !!\n");
+    goto EXIT_POINT;
+  }
   dbg_loud("QSPI Flash: Switch to Quad SPI mode\n");
 #endif
+  
 
   dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
       image->length, image->offset, image->dest);
@@ -586,7 +592,7 @@ int qspi_flash_loadimage_in_quad_mode_smm_dma(struct image_info *image)
     return -1;
   dbg_loud("QSPI Flash: Switch to Extended SPI mode\n");
 #endif
-
+EXIT_POINT:
  //Disable the QSPI unit.
  dbg_loud("QSPI Flash: DeInit\n");
  qspi_deinit();
