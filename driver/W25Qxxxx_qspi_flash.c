@@ -31,14 +31,12 @@
 #include "string.h"
 #include "debug.h"
 
-#if defined CONFIG_QSPI_FLASH_SMM
-#else
-#endif
 //select the right QSPI access function  according to the QSPI access mode (static polymorphism)
+//Single access mode.
 #if defined CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
 
 #if defined CONFIG_QSPI_FLASH_SMM
-#if defined CONFIG_QSPI_FLASH_WITH_DMA
+#if defined CONFIG_DATAFLASH_LOAD_WITH_DMA 
 #define qspi_flash_loadimage_in_single_mode_smm_dma qspi_flash_loadimage
 #define FLASH_ACCESS_DEFINED
 #else
@@ -48,7 +46,7 @@
 
 #else
 //No SMM
-#if defined CONFIG_QSPI_FLASH_WITH_DMA
+#if defined CONFIG_DATAFLASH_LOAD_WITH_DMA
 #define qspi_flash_loadimage_in_single_mode_raw_dma qspi_flash_loadimage
 #define FLASH_ACCESS_DEFINED
 #else
@@ -56,19 +54,18 @@
 #define FLASH_ACCESS_DEFINED
 #endif
 
-#endif
+#endif 
 
-#elif defined CONFIG_SPI_FLASH_DUAL_QSPI_MODE
-#if defined CONFIG_QSPI_FLASH_WITH_DMA && defined CONFIG_QSPI_FLASH_SMM
+#endif /*Single access mode */
+
+// Dual mode
+#if defined CONFIG_SPI_FLASH_DUAL_QSPI_MODE && CONFIG_DATAFLASH_LOAD_WITH_DMA && defined CONFIG_QSPI_FLASH_SMM
 #define qspi_flash_loadimage_in_dual_mode_smm_dma qspi_flash_loadimage
 #define FLASH_ACCESS_DEFINED
-#else
-#define qspi_flash_loadimage_in_dual_mode qspi_flash_loadimage
-#define FLASH_ACCESS_DEFINED
-#endif
+#endif /* Dual mode */
 
-#elif defined CONFIG_SPI_FLASH_QUAD_QSPI_MODE && defined CONFIG_QSPI_FLASH_SMM
-#if defined CONFIG_QSPI_FLASH_WITH_DMA
+#if defined CONFIG_SPI_FLASH_QUAD_QSPI_MODE && defined CONFIG_QSPI_FLASH_SMM
+#if defined CONFIG_DATAFLASH_LOAD_WITH_DMA
 #define qspi_flash_loadimage_in_quad_mode_smm_dma qspi_flash_loadimage
 #define FLASH_ACCESS_DEFINED
 #else
@@ -77,7 +74,7 @@
 #endif
 
 
-#endif
+#endif /* Quad mode */
 
 
 //Check if a load service is defined

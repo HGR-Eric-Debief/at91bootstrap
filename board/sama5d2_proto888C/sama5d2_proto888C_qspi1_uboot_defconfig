@@ -9,6 +9,12 @@ CONFIG_QSPI_BUS1=y
 CONFIG_QSPI1_IOSET_2=y
 #Set IO drive to high level : to allow HIGHEST QSPI bus speed
 CONFIG_IO_DRVSTR_HIGH=y
+#Use the Serial Memory Mode
+CONFIG_QSPI_FLASH_SMM=y
+#Flash chip in QSPI mode
+CONFIG_QSPI_FLASH_CHIP_W25Qxxxx=y
+#Use the DMA
+CONFIG_QSPI_FLASH_WITH_DMA=y
 #
 # Configured SPI FLash Parameters
 #
