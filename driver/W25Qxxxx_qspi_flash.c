@@ -30,6 +30,7 @@
 #include "qspi.h"
 #include "string.h"
 #include "debug.h"
+#include "timer.h"
 
 //select the right QSPI access function  according to the QSPI access mode (static polymorphism)
 //Single access mode.
@@ -82,6 +83,10 @@
 #error NO supported QSPI Flash access mode defined.
 #endif
 
+//Local configuration : not defined at bootstrap level
+//Use a F revision of the chip, mainly used to set the driver strenght, but in contrary to what written in the DataSheet, the default driver strenght is at 100%.
+#define NO_LOCAL_QSPI_FLASH_CHIP_W25QxxFx
+
 /*
  * SPI Extended Mode Commands (GENERIC)
  */
@@ -97,10 +102,11 @@
 #define CMD_WINBOND_READ_SR1 0x05
 #define CMD_WINBOND_READ_SR2 0x35
 #define CMD_WINBOND_WRITE_STATUS_REGS 0x01
-// //Below : for W25Q16F
-//#define CMD_WINBOND_WRITE_SR2 0x31
-//#define CMD_WINBOND_READ_SR3 0x15
-//#define CMD_WINBOND_WRITE_SR3 0x11
+
+// //Below : for W25QxxF only
+#define CMD_WINBOND_WRITE_SR2 0x31
+#define CMD_WINBOND_READ_SR3 0x15
+#define CMD_WINBOND_WRITE_SR3 0x11
 
 // QE bit 2 in Status Reg 2.
 #define WINBOND_BIT_QE (0x1 << 1)
@@ -132,6 +138,25 @@
 #define	STATUS_WRITE_BUSY		(0x1 << 0)
 #define	STATUS_WRITE_ENABLE_CLEAR	(0x0 << 1)
 #define	STATUS_WRITE_ENABLE_SET		(0x1 << 1)
+
+//The QSPI bus slow clock : used to configure the driver strength.
+#define LOCAL_QSPI_SLOW_CLOCK 10000000
+
+#if LOCAL_QSPI_FLASH_CHIP_W25QxxFx
+
+// Driver strength enumeration, follow the DRVi definition, see Data Sheet.
+typedef enum _W25QxxFxx_driver_strength_e
+{
+  W25QXXFXX_DRIVER_STRENGTH_100 = 0,
+  W25QXXFXX_DRIVER_STRENGTH_75,
+  W25QXXFXX_DRIVER_STRENGTH_50,
+  W25QXXFXX_DRIVER_STRENGTH_25,
+  
+} W25QxxFxx_driver_strength_e;
+#define W25QXXFXX_DRIVER_STRENGTH_FIELD(val) ((val) << 0x5) 
+#define W25QXXFXX_DRIVER_STRENGTH_MASK (0x3 << 0x5) 
+
+#endif
 
 #define	QSPI_BUFF_LEN		20
 
@@ -176,7 +201,7 @@ static unsigned int qspi_flash_write_status_regs(unsigned char sr1Value, unsigne
 {
   qspi_frame_t *frame = &qspi_frame;
   qspi_data_t *data = &qspi_data;
-  unsigned int waitLoop = 2000;
+  unsigned int waitLoop = 20; //20 ms wait with udelay of 1ms below
   unsigned char status = 0;
 
   qspi_init_frame(frame);
@@ -194,6 +219,37 @@ static unsigned int qspi_flash_write_status_regs(unsigned char sr1Value, unsigne
   //Wait write done
   do 
   {
+    udelay(1000);
+    status = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
+  } while ((status & WINBOND_BIT_BUSY) && waitLoop--);
+
+  return status & WINBOND_BIT_BUSY;
+}
+
+//Non-volatile Status register write.
+static unsigned int qspi_flash_write_status_reg(unsigned char writeCmd, unsigned char srValue)
+{
+  qspi_frame_t *frame = &qspi_frame;
+  qspi_data_t *data = &qspi_data;
+  unsigned int waitLoop = 20;//20ms with udelay(1ms) below.
+  unsigned char status = 0;
+
+  qspi_init_frame(frame);
+  frame->instruction = writeCmd;
+  frame->tansfer_type = write;
+  frame->protocol = spi_mode;
+
+  qspi_init_data_buff(data, qspi_buff);
+  data->size = 1;
+  data->buffer[0] = srValue;
+  data->direction = DATA_DIR_WRITE;
+
+  qspi_send_command(frame, data);
+  
+  //Wait write done with a deadliine
+  do 
+  {
+    udelay(1000);//in us
     status = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
   } while ((status & WINBOND_BIT_BUSY) && waitLoop--);
 
@@ -260,6 +316,43 @@ static int qspi_flash_set_quad_mode(unsigned int enable)
 
 	return (enable ^ check_bits);
 }
+
+
+#if defined LOCAL_QSPI_FLASH_CHIP_W25QxxFx
+static int qspi_flash_set_driver_strength(W25QxxFxx_driver_strength_e strength)
+{
+  unsigned char srValue;
+  int ret = 0;
+
+ //Do the change only if needed.
+ srValue = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR3);
+ if (W25QXXFXX_DRIVER_STRENGTH_FIELD(strength) == (srValue & W25QXXFXX_DRIVER_STRENGTH_MASK))
+ {
+   dbg_very_loud("QSPI W25QxxFx driver strength : nothing to do\n");
+   return ret; //EXIT HERE
+ }
+   dbg_very_loud("QSPI W25QxxFx driver strength  : change required\n");
+ 
+  ret = qspi_flash_enable_write(CMD_WRITE_ENABLE);
+  if (ret)
+      return -1;
+      
+  srValue = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR3);
+  
+  srValue ^= W25QXXFXX_DRIVER_STRENGTH_MASK;
+  srValue = W25QXXFXX_DRIVER_STRENGTH_FIELD(strength);
+  
+  if (qspi_flash_write_status_reg(CMD_WINBOND_WRITE_SR3,srValue))
+  {
+    //MUST NEVER HAPPENS !! check wait loop counter value.
+    asm("BKPT");
+  }
+
+  srValue = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR3);
+  
+  return (W25QXXFXX_DRIVER_STRENGTH_FIELD(strength) == (srValue & W25QXXFXX_DRIVER_STRENGTH_MASK));
+}
+#endif /*LOCAL_QSPI_FLASH_CHIP_W25QxxFx*/
 
 static void qspi_flash_read_jedec_id(void)
 {
@@ -522,6 +615,12 @@ int qspi_flash_loadimage_in_quad_mode_smm(struct image_info *image)
   const unsigned int dummyCycleQty = 8;
   
 	at91_qspi_hw_init();
+  
+#if defined LOCAL_QSPI_FLASH_CHIP_W25QxxFx
+  qspi_init(LOCAL_QSPI_SLOW_CLOCK, SPI_MODE3);
+  qspi_flash_set_driver_strength(W25QXXFXX_DRIVER_STRENGTH_100);
+#endif /*LOCAL_QSPI_FLASH_CHIP_W25QxxFx*/
+
 
 	qspi_init(AT91C_QSPI_CLK, SPI_MODE3);
 
@@ -565,11 +664,15 @@ int qspi_flash_loadimage_in_quad_mode_smm_dma(struct image_info *image)
 
   at91_qspi_hw_init();
 
+#if defined LOCAL_QSPI_FLASH_CHIP_W25QxxFx
+  qspi_init(LOCAL_QSPI_SLOW_CLOCK, SPI_MODE3);
+  qspi_flash_set_driver_strength(W25QXXFXX_DRIVER_STRENGTH_100);
+#endif /*LOCAL_QSPI_FLASH_CHIP_W25QxxFx*/
+  
   qspi_init(AT91C_QSPI_CLK, SPI_MODE3);
 
   qspi_flash_read_jedec_id();
-  
-
+   
 #if 1
   ret = qspi_flash_set_quad_mode(0x01);
   if (ret)
