@@ -1,9 +1,30 @@
 #
 # BeeAVE Application load checking support
 #
-menu "BeeAVE binary load checking support"
+menu "BeeAVE load configuration"
  depends on CONFIG_LOAD_BEEAVE
  
+config CONFIG_IMG_SIZE
+  string "BeeAVE application size"
+  depends on !CONFIG_UPLOAD_3RD_STAGE
+  default "1048576"
+  help
+    BeeAVE application size (in Bytes). Default set to 1MB.
+
+config CONFIG_JUMP_ADDR
+  depends on !CONFIG_UPLOAD_3RD_STAGE
+  string "The External Ram Address to Load BeeAVE application"
+  default "0x20000000"
+  help
+    The BeeAVE application entry point
+
+config CONFIG_IMG_ADDRESS
+  depends on !CONFIG_UPLOAD_3RD_STAGE
+  string "Flash offset for BeeAVE application"
+  default "0x10000"
+  help
+    The BeeAVe application offset in the Flash memory.
+  
 config CONFIG_CHECK_APPLICATION_LOAD
   bool "Validate BeeaVE application load"
   depends on !CONFIG_UPLOAD_3RD_STAGE

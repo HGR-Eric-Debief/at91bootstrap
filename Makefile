@@ -124,22 +124,9 @@ OBJDUMP=$(CROSS_COMPILE)objdump
 
 PROJECT := $(strip $(subst ",,$(CONFIG_PROJECT)))
 
-ifeq ($(CONFIG_LOAD_BEEAVE),y)
-#BeeAVE specific parameters, reduced size for TEST and from begining
-IMG_ADDRESS := 0x10000
-#IMG_SIZE := 0x100000
-## Size given from the file BeeAVE.bin
-IMG_SIZE := 850000
-
-##Below : two lines for tests.
-#IMG_ADDRESS := 0x00000000
-#IMG_SIZE := 0x40
-JUMP_ADDR := 0x20000000
-else
 IMG_ADDRESS := $(strip $(subst ",,$(CONFIG_IMG_ADDRESS)))
 IMG_SIZE := $(strip $(subst ",,$(CONFIG_IMG_SIZE)))
 JUMP_ADDR := $(strip $(subst ",,$(CONFIG_JUMP_ADDR)))
-endif
 
 OF_OFFSET := $(strip $(subst ",,$(CONFIG_OF_OFFSET)))
 OF_ADDRESS := $(strip $(subst ",,$(CONFIG_OF_ADDRESS)))
