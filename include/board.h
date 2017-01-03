@@ -108,6 +108,10 @@
 #include "sama5d2_proto888C.h"
 #endif
 
+#ifdef CONFIG_SAMA5D2_PROD358A
+#include "sama5d2_prod358A.h"
+#endif
+
 /*
  * Functions Prototype
  */
