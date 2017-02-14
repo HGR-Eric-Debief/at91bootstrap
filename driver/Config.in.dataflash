@@ -365,6 +365,8 @@ endchoice
 
 config CONFIG_QSPI_FLASH_SMM
   bool "Use the Serial Memory Mode"
+  help
+    The Serial Memory Mode set the QPSI unit behaves like a memory controller : fastest transfers.
 endmenu
 
 endmenu
