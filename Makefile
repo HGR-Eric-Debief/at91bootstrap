@@ -26,7 +26,7 @@ BINDIR:=$(TOPDIR)/binaries
 
 DATE := $(shell date --rfc-3339=seconds)
 VERSION := BeeAVE
-REVISION := alpha1
+REVISION := alpha2
 SCMINFO := $(shell ($(TOPDIR)/host-utilities/setlocalversion $(TOPDIR)))
 
 ifeq ($(SCMINFO),)
