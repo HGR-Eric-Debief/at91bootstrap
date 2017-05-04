@@ -23,10 +23,7 @@ endif
 
 BINDIR:=$(TOPDIR)/binaries
 
-
 DATE := $(shell date --rfc-3339=seconds)
-VERSION := BeeAVE
-REVISION := alpha2
 SCMINFO := $(shell ($(TOPDIR)/host-utilities/setlocalversion $(TOPDIR)))
 
 ifeq ($(SCMINFO),)
@@ -53,6 +50,9 @@ ifeq ($(filter $(noconfig_targets),$(MAKECMDGOALS)),)
 endif
 
 include	host-utilities/host.mk
+
+VERSION := $(CONFIG_VERSION)
+REVISION := $(CONFIG_REVISION)
 
 ifeq ($(HAVE_DOT_CONFIG),)
 

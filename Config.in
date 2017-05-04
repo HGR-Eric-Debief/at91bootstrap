@@ -6,7 +6,18 @@ config HAVE_DOT_CONFIG
 	help
 	  Indicate that have an included file.
 
+config CONFIG_VERSION
+  string "Verion name"
+  default "UnknownVersion"
+  help
+    Set the Bootstrap version name
     
+config CONFIG_REVISION
+  string "Revision name"
+  default "V0"
+  help
+    Set the Bootstrap revision name
+
 source "board/Config.in"
 
 source "driver/Config.in.driver"
