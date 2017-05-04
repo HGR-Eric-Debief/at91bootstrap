@@ -401,12 +401,16 @@ endif
 	@echo ld FLAGS
 	@echo ========
 	@echo $(LDFLAGS) && echo
-	@echo ======
-	@echo Sources : $(SRCS) && echo	
-	@echo ======
-	@echo Firmware : $(IMG_SIZE) bytes from $(IMG_ADDRESS) in Flash to $(JUMP_ADDR) in RAM && echo		
-	@echo ======
-	@echo Boot name : $(BOOT_NAME)
+	@echo Sources
+	@echo =======
+	@echo  $(SRCS) && echo	
+	@echo Firmware
+	@echo ========
+	@echo $(IMG_SIZE) bytes from $(IMG_ADDRESS) in Flash to $(JUMP_ADDR) in RAM. && echo
+	@echo Boot name
+	@echo =========
+	@echo $(BOOT_NAME)
+	@echo 
 	
 $(AT91BOOTSTRAP): $(OBJS)
 	$(if $(wildcard $(BINDIR)),,mkdir -p $(BINDIR))
