@@ -83,7 +83,7 @@ void ddram_chip_config(struct ddramc_register *ddramc_config)
       | AT91C_DDRC2_TRFC_(12));   /* 72ns =>  12 * 6 = 72 ns */  
   
    //Low power feature, NONE for the moment.
-    ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_NOLOWPOWER | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
+    ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_NOLOWPOWER | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0) | AT91C_MPDDRC_LPR_UPD_MR_UPDATE_NOSHAREDBUS;
     //!@note Lowpower mode must be tested once the application is operationnal : Memory will be less used than when set under tests.
     //ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_SELFREFRESH | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
     //ddramc_config->lpr = AT91C_MPDDRC_LPR_LPCB_POWERDOWN | AT91C_MPDDRC_LPR_PASR(0) | AT91C_MPDDRC_LPR_DS(0);
