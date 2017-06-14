@@ -29,6 +29,7 @@ source "board/sama5d2_proto888A/Config.in.board"
 source "board/sama5d2_proto888B/Config.in.board"
 source "board/sama5d2_proto888C/Config.in.board"
 source "board/sama5d2_prod358A/Config.in.board"
+source "board/sama5d2_prod358B/Config.in.board"
 endchoice
 
 config CONFIG_BOARDNAME
@@ -54,6 +55,7 @@ config CONFIG_BOARDNAME
 	default "sama5d2_proto888B" if CONFIG_SAMA5D2_PROTO888B
 	default "sama5d2_proto888C" if CONFIG_SAMA5D2_PROTO888C
 	default "sama5d2_prod358A" if CONFIG_SAMA5D2_PROD358A
+	default "sama5d2_prod358B" if CONFIG_SAMA5D2_PROD358B
 
 config AT91SAM9260
 	select CORE_ARM926EJS

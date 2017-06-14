@@ -60,10 +60,6 @@ static int check_loaded_application( struct image_info const* const image, unsig
   const unsigned int value = *(unsigned int*)(image->dest+addr_offset);
   return value == expected_value ? 0 : -3;
 }
-//*** Signal the application invalid load. TO BE DEFINED per board.
-extern void signal_invalid_application(void);
-#else 
-#define signal_invalid_application()
 #endif /*CONFIG_CHECK_APPLICATION_LOAD*/
 //****************************************************************************
 
