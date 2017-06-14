@@ -484,8 +484,8 @@ void at91_qspi_hw_deinit(void)
 
 }
 
-#endif
-#endif
+#endif /* CONFIG_QSPI */
+#endif /* CONFIG_DATAFLASH */
 
 //********************************************************
 void signal_invalid_application(void)
@@ -499,3 +499,14 @@ void signal_invalid_application(void)
       while (loopCounter--);
 }
 //**********************************************************
+
+void led_scene_on()
+{
+  pio_set_value(PROD358A_PIO_LED_SCENE,1);
+}
+
+//**********************************************************
+void led_scene_off()
+{
+  pio_set_value(PROD358A_PIO_LED_SCENE,0);
+}
