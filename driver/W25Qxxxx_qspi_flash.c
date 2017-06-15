@@ -97,7 +97,7 @@
 
 
 /*
- * Winond SPI Flash commands
+ * Winbond SPI Flash commands
  */
 #define CMD_WINBOND_READ_SR1 0x05
 #define CMD_WINBOND_READ_SR2 0x35
