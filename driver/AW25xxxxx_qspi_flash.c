@@ -32,6 +32,10 @@
 #include "debug.h"
 #include "timer.h"
 
+/*
+ * This driver file support Winbond W25QxxF and ADESTO AT25SLxxx flash devices
+ */
+
 //select the right QSPI access function  according to the QSPI access mode (static polymorphism)
 //Single access mode.
 #if defined CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
@@ -99,29 +103,28 @@
 /*
  * Winbond SPI Flash commands
  */
-#define CMD_WINBOND_READ_SR1 0x05
-#define CMD_WINBOND_READ_SR2 0x35
-#define CMD_WINBOND_WRITE_STATUS_REGS 0x01
+#define CMD_READ_SR1 0x05
+#define CMD_READ_SR2 0x35
+#define CMD_WRITE_STATUS_REGS 0x01
+#define CMD_WRITE_SR2 0x31
 
 // //Below : for W25QxxF only
-#define CMD_WINBOND_WRITE_SR2 0x31
+#if defined(LOCAL_QSPI_FLASH_CHIP_W25QxxFx)
 #define CMD_WINBOND_READ_SR3 0x15
 #define CMD_WINBOND_WRITE_SR3 0x11
+#endif /* LOCAL_QSPI_FLASH_CHIP_W25QxxFx */
 
-// QE bit 2 in Status Reg 2.
-#define WINBOND_BIT_QE (0x1 << 1)
-
-// Busy bit ins SR1
-#define WINBOND_BIT_BUSY (0x1 << 0)
 
 /*
  * QSPI Flash Commands (Micron N25Q128A)
  */
-#define	CMD_READ_ID				0x9f
+#if 0
 #define	CMD_READ_EN_VOLATILE_CONFIG_REG		0x65
 #define	CMD_WRITE_EN_VOLATILE_CONFIG_REG	0x61
 #define	CMD_QUAD_IO_FAST_READ			0xeb
+#endif 
 
+#define	CMD_READ_JEDEC_ID				0x9f
 #define	CMD_WRITE_ENABLE			0x06
 #define CMD_VOLATILE_WRITE_ENABLE 0x50
 #define	CMD_WRITE_DISABLE			0x04
@@ -130,14 +133,26 @@
 #define	CMD_WRITE_STATUS_REG			0x01
 
 /* Enhanced Volatile Configuration Register Bit Definitions */
+#if 0
 #define	EN_VOL_CONFIG_DUAL_IO		(0x1 << 6)
 #define	EN_VOL_CONFIG_QUAD_IO		(0x1 << 7)
+#endif
 
 /* Status Register Bit Definitions */
+#if 0
 #define	STATUS_WRITE_READY		(0x0 << 0)
 #define	STATUS_WRITE_BUSY		(0x1 << 0)
 #define	STATUS_WRITE_ENABLE_CLEAR	(0x0 << 1)
-#define	STATUS_WRITE_ENABLE_SET		(0x1 << 1)
+#endif
+
+// Write Enabled bit in SR1
+#define	SR1_BIT_WEL		(0x1 << 1)
+// Busy bit in SR1
+#define SR1_BIT_BUSY (0x1 << 0)
+
+// QE bit 2 in Status Reg 2.
+#define SR2_BIT_QE (0x1 << 1)
+
 
 //The QSPI bus slow clock : used to configure the driver strength.
 #define LOCAL_QSPI_SLOW_CLOCK 10000000
@@ -156,7 +171,7 @@ typedef enum _W25QxxFxx_driver_strength_e
 #define W25QXXFXX_DRIVER_STRENGTH_FIELD(val) ((val) << 0x5) 
 #define W25QXXFXX_DRIVER_STRENGTH_MASK (0x3 << 0x5) 
 
-#endif
+#endif /* LOCAL_QSPI_FLASH_CHIP_W25QxxFx */
 
 #define	QSPI_BUFF_LEN		20
 
@@ -205,7 +220,7 @@ static unsigned int qspi_flash_write_status_regs(unsigned char sr1Value, unsigne
   unsigned char status = 0;
 
   qspi_init_frame(frame);
-  frame->instruction = CMD_WINBOND_WRITE_STATUS_REGS;
+  frame->instruction = CMD_WRITE_STATUS_REGS;
   frame->tansfer_type = write;
   frame->protocol = spi_mode;
 
@@ -220,10 +235,10 @@ static unsigned int qspi_flash_write_status_regs(unsigned char sr1Value, unsigne
   do 
   {
     udelay(1000);
-    status = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-  } while ((status & WINBOND_BIT_BUSY) && waitLoop--);
+    status = qspi_flash_read_status_reg(CMD_READ_SR1);
+  } while ((status & SR1_BIT_BUSY) && waitLoop--);
 
-  return status & WINBOND_BIT_BUSY;
+  return status & SR1_BIT_BUSY;
 }
 
 //Non-volatile Status register write.
@@ -250,10 +265,10 @@ static unsigned int qspi_flash_write_status_reg(unsigned char writeCmd, unsigned
   do 
   {
     udelay(1000);//in us
-    status = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-  } while ((status & WINBOND_BIT_BUSY) && waitLoop--);
+    status = qspi_flash_read_status_reg(CMD_READ_SR1);
+  } while ((status & SR1_BIT_BUSY) && waitLoop--);
 
-  return status & WINBOND_BIT_BUSY;
+  return status & SR1_BIT_BUSY;
 }
 
 
@@ -269,8 +284,8 @@ static int qspi_flash_enable_write(unsigned char writeEnableCmd)
 
 	qspi_send_command(frame, 0);
 
-	status = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-	if (status & STATUS_WRITE_ENABLE_SET)
+	status = qspi_flash_read_status_reg(CMD_READ_SR1);
+	if (status & SR1_BIT_WEL)
 		return 0;
 	else
 		return -1;
@@ -284,8 +299,8 @@ static int qspi_flash_set_quad_mode(unsigned int enable)
 	int ret = 0;
 
  //Do the change only if needed.
- sr2Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
- if (((enable && (sr2Value & WINBOND_BIT_QE)) || (!enable && !(sr2Value & WINBOND_BIT_QE))))
+ sr2Value = qspi_flash_read_status_reg(CMD_READ_SR2);
+ if (((enable && (sr2Value & SR2_BIT_QE)) || (!enable && !(sr2Value & SR2_BIT_QE))))
  {
    dbg_very_loud("QSPI quad mode : nothing to do\n");
    return ret; //EXIT HERE
@@ -296,12 +311,12 @@ static int qspi_flash_set_quad_mode(unsigned int enable)
  if (ret)
     return -1;
     
- sr1Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
+ sr1Value = qspi_flash_read_status_reg(CMD_READ_SR1);
  
 	if (enable)
-		sr2Value|= WINBOND_BIT_QE;
+		sr2Value|= SR2_BIT_QE;
 	else
-		sr2Value &= ~WINBOND_BIT_QE;
+		sr2Value &= ~SR2_BIT_QE;
   
 	if (qspi_flash_write_status_regs(sr1Value,sr2Value))
   {
@@ -309,10 +324,10 @@ static int qspi_flash_set_quad_mode(unsigned int enable)
     asm("BKPT");
   }
   
-	sr1Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR1);
-  sr2Value = qspi_flash_read_status_reg(CMD_WINBOND_READ_SR2);
+	sr1Value = qspi_flash_read_status_reg(CMD_READ_SR1);
+  sr2Value = qspi_flash_read_status_reg(CMD_READ_SR2);
   
-	check_bits = (sr2Value & WINBOND_BIT_QE) ? 0x01 : 0x00;
+	check_bits = (sr2Value & SR2_BIT_QE) ? 0x01 : 0x00;
 
 	return (enable ^ check_bits);
 }
@@ -360,7 +375,7 @@ static void qspi_flash_read_jedec_id(void)
 	qspi_data_t *data = &qspi_data;
 
 	qspi_init_frame(frame);
-	frame->instruction = CMD_READ_ID;
+	frame->instruction = CMD_READ_JEDEC_ID;
 	frame->tansfer_type = read;
 	frame->protocol = spi_mode;
 

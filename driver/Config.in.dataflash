@@ -361,6 +361,11 @@ default CONFIG_QSPI_FLASH_CHIP_N25Q128
   help
     "The W25Qxxxx flash chips family from Winbond"
 
+  config CONFIG_QSPI_FLASH_CHIP_AT25Sxxx
+  bool "ADESTO AT25 chips family"
+  help
+    "The AT25 flash chips family from ADESTO"
+
 endchoice
 
 config CONFIG_QSPI_FLASH_SMM
