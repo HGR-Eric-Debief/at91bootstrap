@@ -115,15 +115,6 @@
 #endif /* LOCAL_QSPI_FLASH_CHIP_W25QxxFx */
 
 
-/*
- * QSPI Flash Commands (Micron N25Q128A)
- */
-#if 0
-#define	CMD_READ_EN_VOLATILE_CONFIG_REG		0x65
-#define	CMD_WRITE_EN_VOLATILE_CONFIG_REG	0x61
-#define	CMD_QUAD_IO_FAST_READ			0xeb
-#endif 
-
 #define	CMD_READ_JEDEC_ID				0x9f
 #define	CMD_WRITE_ENABLE			0x06
 #define CMD_VOLATILE_WRITE_ENABLE 0x50
@@ -132,18 +123,8 @@
 #define	CMD_READ_STATUS_REG			0x05
 #define	CMD_WRITE_STATUS_REG			0x01
 
-/* Enhanced Volatile Configuration Register Bit Definitions */
-#if 0
-#define	EN_VOL_CONFIG_DUAL_IO		(0x1 << 6)
-#define	EN_VOL_CONFIG_QUAD_IO		(0x1 << 7)
-#endif
 
 /* Status Register Bit Definitions */
-#if 0
-#define	STATUS_WRITE_READY		(0x0 << 0)
-#define	STATUS_WRITE_BUSY		(0x1 << 0)
-#define	STATUS_WRITE_ENABLE_CLEAR	(0x0 << 1)
-#endif
 
 // Write Enabled bit in SR1
 #define	SR1_BIT_WEL		(0x1 << 1)
