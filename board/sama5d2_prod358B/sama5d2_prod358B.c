@@ -116,6 +116,20 @@ void lighting_led_init(void)
   pmc_enable_periph_clock(AT91C_ID_PIOD);
   pio_configure(lighting_led_pio);
 }
+//! This function will switch some sensitive IO ports by setting the command port from reset state (input,1) to (output 0).
+static void tdmx_ios_off()
+{
+  const struct pio_desc tdmx_sensitive_pio[] =
+    {
+      { "CMD_TDMX_POWER", PROD358B_PIO_CMD_TDMX, 0, PIO_DEFAULT, PIO_OUTPUT },
+      { "TDMX_TWD0",      AT91C_PIN_PD(21), 0, PIO_DEFAULT, PIO_OUTPUT },
+      { "TDMX_TWCK0",     AT91C_PIN_PD(22), 0, PIO_DEFAULT, PIO_OUTPUT },
+      PIO_DESCRIPTION_END };
+
+  pmc_enable_periph_clock(AT91C_ID_PIOC);
+  pmc_enable_periph_clock(AT91C_ID_PIOD);
+  pio_configure(tdmx_sensitive_pio);
+}
 //*********************************************************
 static void at91_dbgu_hw_init(void)
 {
@@ -385,6 +399,8 @@ void hw_init(void)
   //writel(0x0, SFR_L2CC_HRAMC + AT91C_BASE_SFR);
 	l2cache_prepare();
   
+  //All sensitive IO linked to the TDMX must be set in Output_0
+  tdmx_ios_off();
   //LED init
   lighting_led_init();
   debug_leds_init();
