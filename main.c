@@ -44,12 +44,15 @@
 #include "sfr_aicredir.h"
 #include "rstc.h"
 
-#ifdef CONFIG_EXTERNAL_RAM_TEST
-#include "ddram_utils.h"
+
 #ifdef CONFIG_WITH_CACHE
 #include "cp15.h"
 #endif /*CONFIG_WITH_CACHE*/
+
+#ifdef CONFIG_EXTERNAL_RAM_TEST
+#include "ddram_utils.h"
 #endif /*CONFIG_EXTERNAL_RAM_TEST*/
+
 
 //TEST DDR selfrefresh
 #include "arch/at91_pmc.h"
@@ -101,8 +104,8 @@ static void display_banner (void)
 //**************************************************************************
 int main(void)
 {
-	struct image_info image;
-	int ret = 0;
+  struct image_info image;
+  int ret = 0;
   
 #ifdef CONFIG_HW_INIT
   hw_init();
@@ -201,7 +204,8 @@ for(;;)
 #ifdef CONFIG_DISABLE_ACT8865_I2C
 	act8865_workaround();
 #endif
-  
+
+
 #if defined(CONFIG_TEST_FIRMWARE_LOAD_LOOP)
   unsigned int retryLoop = 40000000;
   while (retryLoop--)
@@ -235,14 +239,23 @@ for(;;)
 
 #ifdef CONFIG_SCLK
 	slowclk_switch_osc32();
-#endif
+#endif  
   
+
 dbg_error("FW upload done, let's start\n");
 //asm("BKPT");
 #if defined(CONFIG_ENTER_NWD)
 	switch_normal_world();
 	/* point never reached with TZ support */
 #endif
+
+//Invalidate the entire cache as a new SW is going to start.
+#ifdef CONFIG_WITH_CACHE
+//The loaded FW is not funcitonal !!
+#error TO BE DEBUGGED !!
+  cp15_clean_invalid_dcache_by_set_way();
+  cp15_invalid_icache();
+#endif /*CONFIG_WITH_CACHE*/
 
 return JUMP_ADDR;
 }

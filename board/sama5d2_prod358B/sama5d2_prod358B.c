@@ -412,12 +412,10 @@ void hw_init(void)
   cp15_enable_mmu();
 #if defined(CONFIG_WITH_CACHE)
 #warning CACHE activated
-  cp15_enable_dcache();
   cp15_enable_icache();
+  cp15_enable_dcache();
 #endif /*CONFIG_CACHE_ENABLED*/
-#endif
-
-#if defined(CONFIG_WITH_MMU)
+  
 //Check MMU & Cache status
   if (cp15_is_mmu_enabled())
     usart_puts("MMU ENabled\r");

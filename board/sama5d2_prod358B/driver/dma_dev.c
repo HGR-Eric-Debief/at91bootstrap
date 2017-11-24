@@ -51,6 +51,11 @@
 #endif
 
 #include "driver/xdmad.h"
+
+#if defined (CONFIG_WITH_CACHE)
+#include "driver/cp15.h"
+#endif
+
 #include "gpio.h"
 #include "usart.h"
 #include "debug.h"
@@ -508,7 +513,7 @@ CONFIG:
   //First check cache consistency
 #if defined (CONFIG_WITH_CACHE)
   cp15_flush_dcache_for_dma((unsigned int)tdReceiveStream, (unsigned int)tdReceiveStream + sizeof(tdReceiveStream));  
-  cp15_flush_dcache_for_dma((unsigned int)tSendStream, (unsigned int)tSendStream + sizeof(tSendStream));
+  cp15_flush_dcache_for_dma((unsigned int)tdSendStream, (unsigned int)tdSendStream + sizeof(tdSendStream));
 
   cp15_flush_dcache_for_dma((unsigned int)toSend, ((unsigned int)(toSend + sendLength)));
   cp15_flush_dcache_for_dma((unsigned int)toRecv, ((unsigned int)(toRecv + recvLength)));
