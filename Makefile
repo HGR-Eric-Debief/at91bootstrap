@@ -546,7 +546,7 @@ tarball:
 PHONY+=tarball
 
 disassembly: all
-	$(OBJDUMP) -DS $(BINDIR)/$(BOOT_NAME).elf > $(BINDIR)/$(BOOT_NAME).S.txt
+	$(OBJDUMP) -DS $(BINDIR)/$(BOOT_NAME).elf > $(BINDIR)/$(BOOT_NAME).lst
 
 PHONY += disassembly
 
