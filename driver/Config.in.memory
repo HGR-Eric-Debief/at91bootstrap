@@ -265,18 +265,19 @@ endif
 
 
 config CONFIG_WITH_MMU
-  bool "Activate MMU"
+  bool "Activate MMU (EXPERIMENTAL)"
   depends on ALLOW_WITH_MMU
   default n
   help
-    "Use the MMU"
+    "Use the MMU (EXPERIMENTAL code, bug down the application at the moment ! )"
 
 config CONFIG_WITH_CACHE
-  bool "Activate the cache management"
+  bool "Activate the cache management (EXPERIMENTAL)"
   depends on ALLOW_WITH_CACHE && CONFIG_WITH_MMU
   default n
   help
-    "Cache activated, requires the MMU activation."
+    "Cache activated, requires the MMU activation. 
+    BEWARE : The cache is activated when the loaded application is started !! (EXPERIMENTAL, Work in progress)"
 
 config CONFIG_EXTERNAL_RAM_TEST
   depends on !CONFIG_ONLY_INTERNAL_RAM

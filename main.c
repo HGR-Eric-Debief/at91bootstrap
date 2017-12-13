@@ -249,13 +249,22 @@ dbg_error("FW upload done, let's start\n");
 	/* point never reached with TZ support */
 #endif
 
+#if defined(CONFIG_WITH_CACHE)
+#warning EXPERIMENTAL CACHE activated
+  cp15_enable_icache();
+  cp15_enable_dcache();
+#endif /*CONFIG_CACHE_ENABLED*/
+
+
+#if 0
 //Invalidate the entire cache as a new SW is going to start.
-#ifdef CONFIG_WITH_CACHE
+#if defined(CONFIG_WITH_CACHE)
 //The loaded FW is not funcitonal !!
 #error TO BE DEBUGGED !!
   cp15_clean_invalid_dcache_by_set_way();
   cp15_invalid_icache();
 #endif /*CONFIG_WITH_CACHE*/
+#endif /* 0 */
 
 return JUMP_ADDR;
 }
