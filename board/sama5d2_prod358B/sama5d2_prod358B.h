@@ -38,8 +38,16 @@
  */
 #define BOARD_MAINOSC		12000000
 
+
 /* PCK: 498MHz, MCK: 166MHz */
-#define BOARD_PLLA_MULA		82
+#define BOARD_PLLA_MULA_498MHZ_MCK		82
+
+/* PCK 402 MHz, MCK:133 MHz */
+#define BOARD_PLLA_MULA_402MHZ_MCK   67
+
+// The actual PLLA Multiplier.
+#define BOARD_PLLA_MULA BOARD_PLLA_MULA_498MHZ_MCK
+
 
 #define BOARD_PCK		((unsigned long)((BOARD_MAINOSC * (BOARD_PLLA_MULA + 1)) / 2))
 #define BOARD_MCK		((unsigned long)((BOARD_MAINOSC * (BOARD_PLLA_MULA + 1)) / 2 / 3))
