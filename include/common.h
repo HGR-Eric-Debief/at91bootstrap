@@ -124,11 +124,12 @@ static inline unsigned int swap_uint32(unsigned int data)
 	return a | b | c | d;
 }
 
-#if defined(CONFIG_SAMA5D2_PROD358B) || defined(CONFIG_SAMA5D2_PROD358A) || defined(CONFIG_SAMA5D2_PROTO888C)
+#if defined(CONFIG_SAMA5D2_PROD358B) || defined(CONFIG_SAMA5D2_PROD358A) || defined(CONFIG_SAMA5D2_PROTO888C) || defined (CONFIG_SAMA5D2_PROD358D)
 //*** Signal the application invalid load. TO BE DEFINED per board.
 extern void signal_invalid_application(void);
 #else 
-#define signal_invalid_application()
+// Empty Placeholder
+#define signal_invalid_application() ((void)0)
 #endif
 
 #endif /* #ifdef __COMMON_H__ */
