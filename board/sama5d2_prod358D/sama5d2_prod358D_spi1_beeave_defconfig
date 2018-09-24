@@ -4,6 +4,9 @@ CONFIG_BEEAVE=y
 CONFIG_VERSION="BeeAVE"
 CONFIG_REVISION="Prod_1"
 
+## Console Messages : Error only ##
+CONFIG_DEBUG_ERROR=y
+CONFIG_DEBUG_CONSOLE_BAUDRATE=1152000
 
 ## SPI bus for Flash memory
 CONFIG_SPI=y

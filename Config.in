@@ -185,6 +185,13 @@ config CONFIG_DEBUG_VERY_LOUD
 
 endchoice
 
+config CONFIG_DEBUG_CONSOLE_BAUDRATE
+  int "Debug message console baudrate (in bps)"
+  default 115200
+  depends on CONFIG_DEBUG
+  help
+    This is the baudrate (in bps) of the USART used to output the DEBUG messages.
+
 menu "LED debugging ..."
 depends on CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D
 config CONFIG_BEEAVE_WITH_DEBUG_LEDS
