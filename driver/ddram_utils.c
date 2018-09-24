@@ -146,7 +146,7 @@ check_32bit_Ram_2Phases(unsigned int* const base_address, unsigned int length, c
   register unsigned int value = 0x00;
   unsigned int remainingQty = length;
   usart_puts("Checking External RAM 32 bits 2 phases : WRITE\n");
-  while (--remainingQty)
+  while (remainingQty--)
   {
     #if 1
     if ((remainingQty & 0xFFFF) == 0xFFFF) 
