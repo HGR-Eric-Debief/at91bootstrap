@@ -366,7 +366,7 @@ static void qspi_flash_read_jedec_id(void)
 
 	qspi_send_command(frame, data);
 
-	dbg_info("QSPI Flash: Manufacturer and Device ID: %d %d %d\n",
+	dbg_loud("QSPI Flash: Manufacturer and Device ID: %d %d %d\n",
 				data->buffer[0] & 0xff,
 				(data->buffer[0] >> 8) & 0xff,
 				(data->buffer[0] >> 16) & 0xff);
@@ -389,6 +389,9 @@ static int qspi_flash_read_image_smm(struct image_info *image, spi_protocols_t a
 	data->buffer = (unsigned int *)image->dest;
 	data->size = image->length;
 	data->direction = DATA_DIR_READ;
+  
+  dbg_loud("QSPI Flash: Read command : Op:%, %d[%d] => %d\n",
+      read_instruction_code, image->length, image->offset, image->dest);
 
 	return qspi_send_command(frame, data);
 }
@@ -414,6 +417,9 @@ static int qspi_flash_read_image_smm_dma (struct image_info *image,
   data->buffer = (unsigned int *)image->dest;
   data->size = image->length;
   data->direction = DATA_DIR_READ;
+  
+  dbg_loud("QSPI Flash: DMA Read command : Op:%d, %d[%d] => %d\n",
+      read_instruction_code, image->length, image->offset, image->dest);
 
   return qspi_send_command_dma(frame, data);
 }
@@ -435,6 +441,9 @@ static int qspi_flash_read_image_raw(struct image_info *image, spi_protocols_t a
   data->buffer = (unsigned int *)image->dest;
   data->size = image->length;
   data->direction = DATA_DIR_READ;
+  
+  dbg_loud("QSPI Flash: Read command : Op:%, %d[%d] => %d\n",
+      read_instruction_code, image->length, image->offset, image->dest);
 
   return qspi_send_command_raw(frame, data);
 }
@@ -456,6 +465,9 @@ static int qspi_flash_read_image_raw_dma(struct image_info *image, spi_protocols
 
   data->buffer = (unsigned int *)image->dest;
   data->size = image->length;
+  
+  dbg_loud("QSPI Flash: DMA Read command : Op:%, %d[%d] => %d\n",
+      read_instruction_code, image->length, image->offset, image->dest);
 
   return qspi_send_command_raw_dma(frame, data);
 }
@@ -679,7 +691,6 @@ int qspi_flash_loadimage_in_quad_mode_smm_dma(struct image_info *image)
   dbg_loud("QSPI Flash: Switch to Quad SPI mode\n");
 #endif
   
-
   dbg_info("QSPI Flash: Copy %d bytes from %d to %d\n",
       image->length, image->offset, image->dest);
 
