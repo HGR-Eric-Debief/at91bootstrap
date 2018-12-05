@@ -243,6 +243,10 @@ for(;;)
   
 
 dbg_error("FW upload done, let's start\n");
+#if defined (CONFIG_DUMP_APP_START_AREA)
+dbg_dump_buffer(DEBUG_INFO, "APP start area: ", image.dest, 128);
+#endif /* CONFIG_DUMP_APP_START */
+
 //asm("BKPT");
 #if defined(CONFIG_ENTER_NWD)
 	switch_normal_world();

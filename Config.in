@@ -166,6 +166,13 @@ config CONFIG_DEBUG
 	default n
 	help
 	  Output Debug messages
+
+config CONFIG_DUMP_APP_START_AREA
+  bool "Dump start of application area once loaded."
+  depends on !CONFIG_UPLOAD_3RD_STAGE && !CONFIG_ONLY_INTERNAL_RAM
+  default n
+  help
+    This will dump the 128 first bytes of the loaded stuff out of RAM.
 	  
 choice
 	prompt "Debug Level"
