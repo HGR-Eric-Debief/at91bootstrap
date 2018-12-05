@@ -2,14 +2,14 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2014, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
  * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the disclaiimer below.
+ * this list of conditions and the disclaimer below.
  *
  * Atmel's name may not be used to endorse or promote products derived from
  * this software without specific prior written permission.
@@ -30,6 +30,7 @@
 #include "arch/at91_twi.h"
 #include "div.h"
 #include "debug.h"
+#include "pmc.h"
 
 #define TWI_CLOCK	400000
 
@@ -278,7 +279,7 @@ int twi_write(unsigned int bus, unsigned char device_addr,
 
 void twi_init(void)
 {
-	unsigned int bus_clock = MASTER_CLOCK;
+	unsigned int bus_clock = at91_get_ahb_clock();
 
 #if defined(CONFIG_TWI0)
 	at91_twi0_base = at91_twi0_hw_init();

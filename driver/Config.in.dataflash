@@ -1,9 +1,25 @@
-menu  "SPI configuration"
 config CONFIG_DATAFLASH_LOAD_WITH_DMA
-  bool "Use DMA"
-  depends on ALLOW_WITH_DMA
+  bool "Use DMA to load DataFlash"
+  depends on ALLOW_WITH_DMA && (CONFIG_SPI || CONFIG_QSPI)
   help
     Dataflash contents will be loaded with DMA help
+
+choice
+	prompt "SPI Interface Select"
+	default	CONFIG_SPI
+
+config CONFIG_SPI
+	bool "Standard SPI Interface"
+	depends on CPU_HAS_SPI0 || CPU_HAS_SPI1 || CPU_HAS_SPI2
+
+config CONFIG_QSPI
+	bool "Quad SPI Interface"
+	depends on CPU_HAS_QSPI0 || CPU_HAS_QSPI1
+
+endchoice
+
+menu  "SPI configuration"
+	depends on CONFIG_SPI
 
 config	CONFIG_SPI_CLK
 	int "SPI clock speed"
@@ -32,6 +48,61 @@ config ALLOW_DATAFLASH_RECOVERY
 	default	n
     
 # ------- SPI boot source -----------------------------------------------------
+choice
+	prompt "SPI Bus Select"
+	default CONFIG_SPI_BUS0
+	help
+
+config CONFIG_SPI_BUS0
+	bool "SPI Bus 0"
+	depends on CPU_HAS_SPI0
+
+config CONFIG_SPI_BUS1
+	bool "SPI Bus 1"
+	depends on CPU_HAS_SPI1
+
+config CONFIG_SPI_BUS2
+	bool "SPI Bus 2"
+	depends on CPU_HAS_SPI2
+
+endchoice
+
+choice
+	prompt "SPI0 IOSET"
+	depends on CONFIG_SPI_BUS0 && CPU_HAS_PIO4
+	default	CONFIG_SPI0_IOSET_1
+	help
+
+config CONFIG_SPI0_IOSET_1
+	depends on CPU_HAS_SPI0_IOSET1
+	bool "SPI0 IOSET 1"
+
+config CONFIG_SPI0_IOSET_2
+	depends on CPU_HAS_SPI0_IOSET2
+	bool "SPI0 IOSET 2"
+
+endchoice
+
+choice
+	prompt "SPI1 IOSET"
+	depends on CONFIG_SPI_BUS1 && CPU_HAS_PIO4
+	default	CONFIG_SPI1_IOSET_1
+	help
+
+config CONFIG_SPI1_IOSET_1
+	depends on CPU_HAS_SPI1_IOSET1
+	bool "SPI1 IOSET 1"
+
+config CONFIG_SPI1_IOSET_2
+	depends on CPU_HAS_SPI1_IOSET2
+	bool "SPI1 IOSET 2"
+
+config CONFIG_SPI1_IOSET_3
+	depends on CPU_HAS_SPI1_IOSET3
+	bool "SPI1 IOSET 3"
+
+endchoice
+
 choice
 	prompt "Chip Select"
 	default CONFIG_SPI_CS0
@@ -108,23 +179,131 @@ config CONFIG_SPI_BOOT
 	default "AT91C_SPI_PCS2_DATAFLASH"	if CONFIG_SPI_BOOT_CS2
 	default "AT91C_SPI_PCS3_DATAFLASH"	if CONFIG_SPI_BOOT_CS3
 
-menu "SPI Flash"
+endmenu
+
+config SPI_FLASH_ALLOW_SINGLE_QSPI_MODE
+  bool
+  default n
+  
+config SPI_FLASH_ALLOW_DUAL_QSPI_MODE
+  bool
+  default n
+  
+config SPI_FLASH_ALLOW_QUAD_QSPI_MODE
+  bool
+  default n
+  
+menu "QSPI Configuration"
+	depends on CONFIG_QSPI
+
+config CONFIG_QSPI_CLK
+	int "QSPI Clock Speed"
+	default 33000000
+	help
+	  What speed (in Hz) should the QSPI run at.
+
+choice
+	prompt "QSPI Bus Select"
+	default CONFIG_QSPI_BUS0
+	help
+
+config CONFIG_QSPI_BUS0
+	bool "QSPI Bus 0"
+	depends on CPU_HAS_QSPI0
+
+config CONFIG_QSPI_BUS1
+	bool "QSPI Bus 1"
+	depends on CPU_HAS_QSPI1
+
+endchoice
+
+choice
+	prompt "QSPI0 IOSET"
+	depends on CONFIG_QSPI_BUS0 && CPU_HAS_PIO4
+	default	CONFIG_QSPI0_IOSET_1
+	help
+
+config CONFIG_QSPI0_IOSET_1
+	depends on CPU_HAS_QSPI0_IOSET1
+	bool "QSPI0 IOSET 1"
+
+config CONFIG_QSPI0_IOSET_2
+	depends on CPU_HAS_QSPI0_IOSET2
+	bool "QSPI0 IOSET 2"
+
+config CONFIG_QSPI0_IOSET_3
+	depends on CPU_HAS_QSPI0_IOSET3
+	bool "QSPI0 IOSET 3"
+
+endchoice
+
+choice
+	prompt "QSPI1 IOSET"
+	depends on CONFIG_QSPI_BUS1 && CPU_HAS_PIO4
+	default	CONFIG_QSPI1_IOSET_1
+	help
+
+config CONFIG_QSPI1_IOSET_1
+	depends on CPU_HAS_QSPI1_IOSET1
+	bool "QSPI1 IOSET 1"
+
+config CONFIG_QSPI1_IOSET_2
+	depends on CPU_HAS_QSPI1_IOSET2
+	bool "QSPI1 IOSET 2"
+
+config CONFIG_QSPI1_IOSET_3
+	depends on CPU_HAS_QSPI1_IOSET3
+	bool "QSPI1 IOSET 3"
+
+endchoice
+choice 
+  prompt "QSPI access mode"
+  default CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
+  depends on CONFIG_QSPI
+  help
+    "Set the QSPI access mode, either single(MOSI,MISO) , dual(IO0,IO1)  or quad(IO0,IO1,IO2,IO3). Depends on the board schematic"
+  
+  config CONFIG_SPI_FLASH_SINGLE_QSPI_MODE
+    bool "Single"
+    depends on SPI_FLASH_ALLOW_SINGLE_QSPI_MODE
+
+  config CONFIG_SPI_FLASH_DUAL_QSPI_MODE
+    bool "Dual"
+    depends on SPI_FLASH_ALLOW_DUAL_QSPI_MODE
+    
+  config CONFIG_SPI_FLASH_QUAD_QSPI_MODE
+    bool "Quad"
+    depends on SPI_FLASH_ALLOW_QUAD_QSPI_MODE
+endchoice
+
+endmenu
+
+menu "Serial Flash"
   depends on CONFIG_DATAFLASH
 choice
-  prompt "SPI Flash Parameters"
+  prompt "Serial Flash Parameters"
   default CONFIG_PROBE_PARAMS_SPI_FLASH
   help
-    "Set the actual way to get the SPI Flash parameters (static or probbed)"
+    "Set the actual way to get the Serial Flash parameters (static or probbed)"
 
-config CONFIG_PROBE_PARAMS_SPI_FLASH
+ config CONFIG_PROBE_PARAMS_SPI_FLASH
   bool "Probed"
+  depends on CONFIG_SPI
   help 
-    "Probe the SPI Flash to set the parameters. Must be a well known one (from ATMEL at this time)"
+    "Probe the Serial Flash to set the parameters. Must be a well known one (from ATMEL at this time)"
     
-  config CONFIG_SET_PARAMS_SPI_FLASH
+ config CONFIG_SET_PARAMS_SPI_FLASH
   bool "Configured"
+  depends on CONFIG_SPI
   help 
-    "Set the SPI FLash parameters by configuration"
+    "Set the Serial FLash parameters by configuration"
+    
+ config CONFIG_QSPI_FLASH_CHIP
+  depends on CONFIG_QSPI
+  bool "Use QSPI Flash Chips"
+  help
+    "Upload from QSPI KNOWN Flash Chips."
+    
 endchoice
 
 menu "Configured SPI FLash Parameters"
@@ -163,7 +342,41 @@ config CONFIG_SPI_FLASH_PARAMS_PAGE_OFFSET
     "Pages offset (ECC,Data)"
 
 endmenu
-    
+
+menu "QSPI Flash chip selection"
+depends on CONFIG_QSPI_FLASH_CHIP
+
+choice 
+prompt "QSPI Flash selected"
+default CONFIG_QSPI_FLASH_CHIP_N25Q128 if !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+default CONFIG_QSPI_FLASH_CHIP_W25Qxxxx if (CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A)
+default CONFIG_QSPI_FLASH_CHIP_AT25Sxxx if (CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+
+  config CONFIG_QSPI_FLASH_CHIP_N25Q128
+  depends on !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+  select CONFIG_QSPI_FLASH_SMM
+  bool "Micron N25Q128 chip"
+  help
+    "The N25Q128 flash chip from Micron"
+
+  config CONFIG_QSPI_FLASH_CHIP_W25Qxxxx
+  depends on (CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+  bool "Winbond W25Qxxxx chips family"
+  help
+    "The W25Qxxxx flash chips family from Winbond"
+
+  config CONFIG_QSPI_FLASH_CHIP_AT25Sxxx
+  depends on (CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A ||  CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+  bool "ADESTO AT25 chips family"
+  help
+    "The AT25 flash chips family from ADESTO"
+
+endchoice
+
+config CONFIG_QSPI_FLASH_SMM
+  bool "Use the Serial Memory Mode"
+  help
+    The Serial Memory Mode set the QPSI unit behaves like a memory controller : fastest transfers.
 endmenu
 
 endmenu

@@ -2,14 +2,14 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
  * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the disclaiimer below.
+ * this list of conditions and the disclaimer below.
  *
  * Atmel's name may not be used to endorse or promote products derived from
  * this software without specific prior written permission.
@@ -28,7 +28,9 @@
 #include "usart.h"
 #include "debug.h"
 #include <stdarg.h>
+#include <string.h>
 
+#define ROW_SIZE	0x10
 #define MAX_BUFFER	128
 
 static char dbg_buf[MAX_BUFFER];
@@ -45,6 +47,9 @@ static inline short fill_char(char *buf, char val)
 static inline short fill_string(char *buf, char *p)
 {
 	short num = 0;
+
+	if (!p)
+		p = "(null)";
 
 	while (*p != 0) {
 		*buf++ = *p++;
@@ -113,6 +118,7 @@ int dbg_printf(const char *fmt_str, ...)
 				*p++='b';
 				num=fill_bin_int(p, va_arg(ap, unsigned int));
 				break;
+			case 'p':
 			case 'd':
 			case 'i':
 			case 'u':
@@ -120,11 +126,9 @@ int dbg_printf(const char *fmt_str, ...)
 				*p++ = '0';
 				*p++ = 'x';
 				num = fill_hex_int(p, va_arg(ap, unsigned int));
-
 				break;
 			case 's':
 				num = fill_string(p, va_arg(ap, char *));
-
 				break;
 			case 'c':
 				num =
@@ -148,6 +152,73 @@ int dbg_printf(const char *fmt_str, ...)
 	usart_puts(dbg_buf);
 
 	return 0;
+}
+
+static void dbg_hexdump_line(const unsigned char *buf)
+{
+	unsigned int j;
+
+	for (j = 0; j < ROW_SIZE; j++)
+		dbg_printf(" %x", buf[j]);
+
+	dbg_printf("\t");
+
+	for (j = 0; j < ROW_SIZE; j++) {
+		if ((buf[j] < 0x20) || (buf[j] >= 0x7F))
+			dbg_printf(".");
+		else
+			dbg_printf("%c", (char) buf[j]);
+	}
+
+	dbg_printf("\n");
+}
+
+static void dbg_int_hexdump_line(const unsigned char *buf)
+{
+	unsigned int j;
+	unsigned int *word;
+
+	word = (unsigned int *)buf;
+
+	for (j = 0; j < ROW_SIZE / 4; j++)
+		dbg_printf(" %x", word[j]);
+
+	dbg_printf("\n");
+}
+
+
+void dbg_hexdump(const unsigned char *buf,
+		 unsigned int size, unsigned int width)
+{
+	unsigned int r, row, delta;
+	unsigned int address = (unsigned int)buf;
+	void (*dump_line)(const unsigned char *buf);
+
+	row = size / ROW_SIZE;
+	if (size % ROW_SIZE)
+		row++;
+
+	if (width == DUMP_WIDTH_BIT_32) {
+		dump_line = dbg_int_hexdump_line;
+		delta = 4;
+	} else {
+		dump_line = dbg_hexdump_line;
+		delta = 1;
+	}
+
+	dbg_printf("%s:", "@address");
+	for (r = 0; r < ROW_SIZE;) {
+		dbg_printf(" %x", r);
+		r += delta;
+	}
+	dbg_printf("\n");
+
+	for (r = 0; r < row; r++) {
+		dbg_printf("%x:", address);
+		(*dump_line)(buf);
+		address += ROW_SIZE;
+		buf += ROW_SIZE;
+	}
 }
 //***********************************************************************
 int dbg_dump_buffer(const char level, const char* prefix, unsigned char* buffer, unsigned int len)

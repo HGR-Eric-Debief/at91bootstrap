@@ -64,7 +64,7 @@ void MMU_TB_Initialize(struct ExtMemDescriptor* pDesc, unsigned int *pTB);
  */
 void MMU_Initialize(unsigned int *pTB);
 
-//! The Memory descriptor table is defined in the linker script.
-extern unsigned int MEMORY_TRANSLATION_TABLE_BASE;
+//! The Memory descriptor table is defined in the target's description file in the board/target directory.
+extern unsigned int* MEMORY_TRANSLATION_TABLE_BASE;
 
 #endif /*MMU_H_*/

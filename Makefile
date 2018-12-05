@@ -23,10 +23,7 @@ endif
 
 BINDIR:=$(TOPDIR)/binaries
 
-
 DATE := $(shell date --rfc-3339=seconds)
-VERSION := 3.7.1
-REVISION :=
 SCMINFO := $(shell ($(TOPDIR)/host-utilities/setlocalversion $(TOPDIR)))
 
 ifeq ($(SCMINFO),)
@@ -53,6 +50,9 @@ ifeq ($(filter $(noconfig_targets),$(MAKECMDGOALS)),)
 endif
 
 include	host-utilities/host.mk
+
+VERSION := $(CONFIG_VERSION)
+REVISION := $(CONFIG_REVISION)
 
 ifeq ($(HAVE_DOT_CONFIG),)
 
@@ -123,9 +123,11 @@ OBJCOPY=$(CROSS_COMPILE)objcopy
 OBJDUMP=$(CROSS_COMPILE)objdump
 
 PROJECT := $(strip $(subst ",,$(CONFIG_PROJECT)))
+
 IMG_ADDRESS := $(strip $(subst ",,$(CONFIG_IMG_ADDRESS)))
 IMG_SIZE := $(strip $(subst ",,$(CONFIG_IMG_SIZE)))
 JUMP_ADDR := $(strip $(subst ",,$(CONFIG_JUMP_ADDR)))
+
 OF_OFFSET := $(strip $(subst ",,$(CONFIG_OF_OFFSET)))
 OF_ADDRESS := $(strip $(subst ",,$(CONFIG_OF_ADDRESS)))
 BOOTSTRAP_MAXSIZE := $(strip $(subst ",,$(CONFIG_BOOTSTRAP_MAXSIZE)))
@@ -149,6 +151,7 @@ CRYSTAL:=$(strip $(subst ",,$(CONFIG_CRYSTAL)))
 
 # driver definitions
 SPI_CLK:=$(strip $(subst ",,$(CONFIG_SPI_CLK)))
+QSPI_CLK:=$(strip $(subst ",,$(CONFIG_QSPI_CLK)))
 SPI_BOOT:=$(strip $(subst ",,$(CONFIG_SPI_BOOT)))
 
 #Add name decoration according to the BUILD destination.
@@ -184,6 +187,10 @@ endif
 
 ifeq ($(CONFIG_DDR2),y)
 REVISION :=$(REVISION)-DDR2
+endif
+
+ifeq ($(CONFIG_DDR3),y)
+REVISION :=$(REVISION)-DDR3
 endif
 
 #LP-DDR1 : only known chips
@@ -257,6 +264,10 @@ ifeq ($(CONFIG_LOAD_4MB), y)
 TARGET_NAME:=$(basename $(IMAGE_NAME))
 endif
 
+ifeq ($(CONFIG_LOAD_BEEAVE), y)
+TARGET_NAME:=$(basename $(IMAGE_NAME))
+endif
+
 BOOT_NAME=$(BOARDNAME)-$(PROJECT)$(CARD_SUFFIX)boot-$(TARGET_NAME)$(BLOB)-$(VERSION)$(REV)
 AT91BOOTSTRAP:=$(BINDIR)/$(BOOT_NAME).bin
 
@@ -266,15 +277,19 @@ endif
 
 ifeq ($(SYMLINK),)
 SYMLINK=at91bootstrap.bin
-ELF_SYMLINK=at91bootstrap.elf
+SYMLINK_ELF=at91bootstrap.elf
+SYMLINK_MAP=at91bootstrap.map
+endif
+
+ifeq ($(SYMLINK_BOOT),)
+SYMLINK_BOOT=boot.bin
 endif
 
 COBJS-y:= $(TOPDIR)/main.o $(TOPDIR)/board/$(BOARDNAME)/$(BOARDNAME).o
 SOBJS-y := $(TOPDIR)/crt0_gnu.o
 
 
-
-include	lib/libc.mk
+include	lib/lib.mk
 include	driver/driver.mk
 include	fs/src/fat.mk
 
@@ -297,13 +312,11 @@ ASFLAGS=-Wall -I$(INCL) -Iinclude
 ifeq ($(CONFIG_BUILD_RELEASE),y)
 ## debug Release
 CPPFLAGS += -Os
-ASFLAGS += -Os
 #Fake RELEASE => DEBUG from startup.
 #CPPFLAGS += -g -Os
-#ASFLAGS += -g -Os
 else
-CPPFLAGS += -g -g3 -O0
-ASFLAGS += -g -O0
+CPPFLAGS += -g3 -O0
+ASFLAGS += -g
 endif
 
 include	toplevel_cpp.mk
@@ -321,17 +334,22 @@ link_script:=elf32-littlearm.lds
 endif
 
 # Linker flags.
+#Thumb mode or DEBUG build (-O0) need some libgcc support functions.
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to map file
 #  -lc 	   : 	tells the linker to tie in newlib
-#  -lgcc   : 	tells the linker to tie in newlib
+#  -lgcc   : 	tells the linker to tie in libgcc
+# -L$(shell dirname `$(CC) --print-libgcc-file-name`) : got the libgcc file path.
 LDFLAGS+=-nostartfiles -Map=$(BINDIR)/$(BOOT_NAME).map --cref -static
 LDFLAGS+=-T $(link_script) $(GC_SECTIONS) -Ttext $(LINK_ADDR)
+LDFLAGS+= -L$(shell dirname `$(CC) --print-libgcc-file-name`)
+LIBS+=-lgcc
 
 ifneq ($(DATA_SECTION_ADDR),)
 LDFLAGS+=-Tdata $(DATA_SECTION_ADDR)
 endif
+
 
 gccversion := $(shell expr `$(CC) -dumpversion`)
 
@@ -369,6 +387,7 @@ endif
 	@echo Driver config
 	@echo ========
 	@echo SPI_CLCK : $(SPI_CLK)
+	@echo QSPI_CLCK : $(QSPI_CLK)
 	@echo SPI_BOOT : $(SPI_BOOT) && echo
 	@echo CC
 	@echo ========
@@ -382,21 +401,28 @@ endif
 	@echo ld FLAGS
 	@echo ========
 	@echo $(LDFLAGS) && echo
-	@echo ======
-	@echo Sources : $(SRCS) && echo
-	@echo Objets : $(OBJS) && echo
-	@echo ======
-	@echo Boot name : $(BOOT_NAME)
+	@echo Sources
+	@echo =======
+	@echo  $(SRCS) && echo	
+	@echo Firmware
+	@echo ========
+	@echo $(IMG_SIZE) bytes from $(IMG_ADDRESS) in Flash to $(JUMP_ADDR) in RAM. && echo
+	@echo Boot name
+	@echo =========
+	@echo $(BOOT_NAME)
+	@echo 
 	
 $(AT91BOOTSTRAP): $(OBJS)
 	$(if $(wildcard $(BINDIR)),,mkdir -p $(BINDIR))
 	@echo "  LD        "$(BOOT_NAME).elf
-	@$(LD) $(LDFLAGS) -n -o $(BINDIR)/$(BOOT_NAME).elf $(OBJS)
+	@$(LD) $(LDFLAGS) -n -o $(BINDIR)/$(BOOT_NAME).elf $(OBJS) $(LIBS)
 #	@$(OBJCOPY) --strip-debug --strip-unneeded $(BINDIR)/$(BOOT_NAME).elf -O binary $(BINDIR)/$(BOOT_NAME).bin
 	@$(OBJCOPY) --strip-all $(BINDIR)/$(BOOT_NAME).elf -O binary $@
 	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK}
-	@ln -sf $(BOOT_NAME).elf ${BINDIR}/${ELF_SYMLINK}
-
+	@ln -sf $(BOOT_NAME).bin ${BINDIR}/${SYMLINK_BOOT}
+	@ln -sf $(BOOT_NAME).elf ${BINDIR}/${SYMLINK_ELF}
+	@ln -sf $(BOOT_NAME).map ${BINDIR}/${SYMLINK_MAP}
+	
 %.o : %.c .config
 	@echo "  CC        "$<
 	@$(CC) $(CPPFLAGS) -c -o $@ $<
@@ -412,18 +438,20 @@ rebuild: clean all
 ChkFileSize: $(AT91BOOTSTRAP)
 	@( fsize=`./scripts/get_sram_size.sh $(BINDIR)/$(BOOT_NAME).map`; \
 	  if [ $$? -ne 0 ] ; then \
-		rm $(BINDIR)/$(BOOT_NAME).bin ;\
-		rm ${BINDIR}/${SYMLINK}; \
+		rm $(BINDIR)/*.bin ;\
+		rm ${BINDIR}/*.elf; \
+		rm ${BINDIR}/*.map; \
 		exit 3; \
 	  fi ; \
 	  echo "Size of $(BOOT_NAME).bin is $$fsize bytes"; \
 	  if [ "$$fsize" -gt "$(BOOTSTRAP_MAXSIZE)" ] ; then \
 		echo "[Failed***] It's too big to fit into SRAM area. the support maximum size is $(BOOTSTRAP_MAXSIZE)"; \
-		rm $(BINDIR)/$(BOOT_NAME).bin ;\
-		rm ${BINDIR}/${SYMLINK}; \
+		rm $(BINDIR)/*.bin ;\
+		rm ${BINDIR}/*.elf; \
+		rm ${BINDIR}/*.map; \
 		exit 2;\
 	  else \
-	  	echo "[Succeeded] It's OK to fit into SRAM area ($(BOOTSTRAP_MAXSIZE) bytes)"; \
+	  	echo "[Succeeded] It's OK; it fits into SRAM area ($(BOOTSTRAP_MAXSIZE) bytes)"; \
 		stack_space=`expr $(BOOTSTRAP_MAXSIZE) - $$fsize`; \
 		echo "[Attention] The space left for stack is $$stack_space bytes"; \
 	  fi )
@@ -518,7 +546,7 @@ tarball:
 PHONY+=tarball
 
 disassembly: all
-	$(OBJDUMP) -DS $(BINDIR)/$(BOOT_NAME).elf > $(BINDIR)/$(BOOT_NAME).S.txt
+	$(OBJDUMP) -DS $(BINDIR)/$(BOOT_NAME).elf > $(BINDIR)/$(BOOT_NAME).lst
 
 PHONY += disassembly
 

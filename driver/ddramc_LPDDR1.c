@@ -52,11 +52,11 @@ static unsigned int read_ddramc(unsigned int address, unsigned int offset)
 #if defined (CONFIG_LPDDR1)
 int ddram_initialize(unsigned int base_address,
 			unsigned int ram_address,
-      unsigned int bank_offset,
 			struct ddramc_register *ddramc_config)
 {
 
   unsigned int auto_refresh_loop = 0;
+  unsigned int reg_val = 0;
 	/*
 	 * Step 1: Program the memory device type into the Memory Device Register
 	 */
@@ -83,6 +83,8 @@ int ddram_initialize(unsigned int base_address,
    * device's clocks
 	 */
 	write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_NOP_CMD);
+  reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+  asm volatile("DMB");
 	*((unsigned volatile int *)ram_address) = 0;
 	/* Now, clocks which drive the LPDDR1-SDRAM device are enabled */
 
@@ -94,6 +96,8 @@ int ddram_initialize(unsigned int base_address,
 	 * Step 6:  An NOP command is issued to the LPDDR1-SDRAM => IO calibration request
 	 */
 	write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_NOP_CMD);
+  reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+  asm volatile("DMB");
 	*((unsigned volatile int *)ram_address) = 0;
   /*Delay before next*/
 	udelay(200);
@@ -102,6 +106,8 @@ int ddram_initialize(unsigned int base_address,
 	 * Step 7: An All Bank Precharge command is issued to the LPDDR1-SDRAM.
 	 */
 	write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_PRCGALL_CMD);
+  reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+  asm volatile("DMB");
 	*((unsigned volatile int *)ram_address) = 0;
   /*Delay before next*/
 	udelay(200);
@@ -112,6 +118,8 @@ int ddram_initialize(unsigned int base_address,
   for (auto_refresh_loop = 0 ; auto_refresh_loop < 2 ; ++auto_refresh_loop)
   {
     write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_RFSH_CMD);
+    reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+    asm volatile("DMB");
     //Two accesses to ack the command.
     *((unsigned volatile int *)ram_address) = 0;
     *((unsigned volatile int *)ram_address) = 0;
@@ -121,10 +129,12 @@ int ddram_initialize(unsigned int base_address,
 
 	/*
 	 * Step 9: An Extended Mode Register set(EMRS) cycle is issued.
-   * Activation with write to address with BA[1:0]=b10 BA position depends of the chip geometry and use.
+   * Activation with write to address with BA[1:0]=b10 BA position depends of the chip geometry and access.
 	 */
 	write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_EXT_LMR_CMD);
-	*((unsigned volatile int *)(ram_address + (0x2 << bank_offset))) = 0;
+  reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+  asm volatile("DMB");
+	*((unsigned volatile int *)(ram_address + (0x2 << ddramc_config->bank_offset))) = 0;
    /* delay before next command*/
    udelay(200);
    
@@ -132,6 +142,8 @@ int ddram_initialize(unsigned int base_address,
   * Step 10: Mode Register Set cycle : program DDR1 parameters.
   */
   write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_LMR_CMD);
+  reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+  asm volatile("DMB");
   *((unsigned volatile int *)(ram_address)) = 0;
    /* delay before next command*/
    udelay(200);
@@ -140,6 +152,8 @@ int ddram_initialize(unsigned int base_address,
   * Step 11: Enter NORMAL mode
   */
    write_ddramc(base_address, HDDRSDRC2_MR, AT91C_DDRC2_MODE_NORMAL_CMD);
+   reg_val = read_ddramc(base_address, HDDRSDRC2_MR);
+   asm volatile("DMB");
   *((unsigned volatile int *)(ram_address)) = 0;
    /* delay before next command*/
    udelay(200);
@@ -154,7 +168,20 @@ int ddram_initialize(unsigned int base_address,
 	 */
 	write_ddramc(base_address, HDDRSDRC2_RTR, ddramc_config->rtr);
 
+  //Remove the unused compiler warning
+  reg_val = reg_val;
+  
 	return 0;
+}
+
+void ddramc_dump_regs(unsigned int base_address)
+{
+#if (BOOTSTRAP_DEBUG_LEVEL >= DEBUG_LOUD)
+  unsigned int size = 0x160;
+
+  dbg_info("\nDump DDRAMC Registers:\n");
+  dbg_hexdump((unsigned char *)base_address, size, DUMP_WIDTH_BIT_32);
+#endif
 }
 #else
 #error WRONG Memory type, here for LP-DDR1.

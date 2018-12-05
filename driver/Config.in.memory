@@ -17,7 +17,7 @@ config CONFIG_DDRC
   bool
   default n
   help
-    Initialize DDR-2/-1 SDRAM controller before copying
+    Initialize DDR-3/-2 SDRAM controller before copying
 
 
 config  ALLOW_DATAFLASH
@@ -32,14 +32,6 @@ config  ALLOW_NANDFLASH
   bool
   default n
 
-config  ALLOW_SDCARD
-  bool
-  default n
-
-config  ALLOW_HSMCI
-  bool
-  default n
-  
 config  ALLOW_PSRAM
   bool
   default n
@@ -70,26 +62,30 @@ menu "RAM Configuration"
 
   config CONFIG_ONLY_INTERNAL_RAM
   bool "SRAM ONLY"
-  depends on CONFIG_SAMA5D31_BEEAVE
+  depends on (CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   help
     Only the SRAM will be used(no SDRAM controller init, USED for test|Start-up bootstrap release)
 
 choice
   prompt "DDR-SDRAM device type"
   depends on CONFIG_DDRC && !CONFIG_ONLY_INTERNAL_RAM
-  default CONFIG_DDR2 if !CONFIG_SAMA5D31_BEEAVE
-  default CONFIG_LPDDR1 if CONFIG_SAMA5D31_BEEAVE
+  default CONFIG_DDR2 if !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+  default CONFIG_LPDDR1 if (CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
 
 config CONFIG_LPDDR2
-  depends on !CONFIG_SAMA5D31_BEEAVE
+  depends on !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   bool "Low-power DDR2-SDRAM"
 
 config CONFIG_DDR2
-  depends on !CONFIG_SAMA5D31_BEEAVE
+  depends on !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   bool "DDR2-SDRAM"
 
+config CONFIG_DDR3
+  depends on !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+	bool "DDR3-SDRAM"
+
 config CONFIG_LPDDR1
-  depends on CONFIG_SAMA5D31_BEEAVE
+  depends on (CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   bool "Low-power DDR1-SDRAM"
 
 endchoice
@@ -102,13 +98,13 @@ config  CONFIG_SDRAM_16BIT
 
 choice
   prompt "RAM Definition"
-  default RAM_GENERIC_DEFINITION if !CONFIG_SAMA5D31_BEEAVE
-  default CONFIG_KNOWN_RAM_CHIP_DEFINITION if CONFIG_SAMA5D31_BEEAVE
+  default RAM_GENERIC_DEFINITION if !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
+  default CONFIG_KNOWN_RAM_CHIP_DEFINITION if (CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   depends on !CONFIG_ONLY_INTERNAL_RAM
 
 config RAM_GENERIC_DEFINITION
   bool "RAM Generic Definition (done by hand)"
-  depends on !CONFIG_SAMA5D31_BEEAVE
+  depends on !(CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
   
 config CONFIG_KNOWN_RAM_CHIP_DEFINITION
   depends on ALLOW_KNOWN_RAM_CHIP_DEFINITION
@@ -122,9 +118,10 @@ endif
 
 endmenu
 
+#&& !CONFIG_KNOWN_RAM_CHIP_DEFINITION
 choice
   prompt "RAM size"
-  depends on CONFIG_SDRAM || CONFIG_SDDRC || CONFIG_DDRC && !CONFIG_KNOWN_RAM_CHIP_DEFINITION
+  depends on CONFIG_SDRAM || CONFIG_SDDRC || CONFIG_DDRC
   default CONFIG_RAM_64MB
 
 config  CONFIG_RAM_32MB
@@ -179,6 +176,7 @@ config  CONFIG_SDCARD
 
 endchoice
 
+
 config CONFIG_MEMORY
   string
   default "dataflash" if CONFIG_DATAFLASH
@@ -189,25 +187,59 @@ config CONFIG_MEMORY
 menu  "SD Card Configuration"
   depends on CONFIG_SDCARD
 
-config CONFIG_SDCARD_HS
+config CONFIG_AT91_MCI
   bool
-	default y if AT91SAM9G45
-	default y if AT91SAM9X5
-	default y if AT91SAM9N12
-	default y if SAMA5D3X || SAMA5D4
-  default n
+	depends on CPU_HAS_HSMCI0 || CPU_HAS_HSMCI1 || CPU_HAS_HSMCI2 || CPU_HAS_MCI0 || CPU_HAS_MCI1
+	default y
+
+choice
+	prompt "MultiMedia Card Interface Select"
+	depends on CONFIG_AT91_MCI
+	default CONFIG_AT91_MCI0
+	help
+	  This interface allow you select which MultiMedia Card Interface is used for the SD Card.
+
+config CONFIG_AT91_MCI0
+	bool "On Atmel MCI 0"
+	depends on CPU_HAS_HSMCI0 || CPU_HAS_MCI0
+
+config CONFIG_AT91_MCI1
+	bool "On Atmel MCI 1"
+	depends on CPU_HAS_HSMCI1 || CPU_HAS_MCI1
+
+config CONFIG_AT91_MCI2
+	bool "On Atmel MCI 2"
+	depends on CPU_HAS_HSMCI2
+
+endchoice
+
+config CONFIG_SDHC
+	bool
+	depends on CPU_HAS_SDHC0 || CPU_HAS_SDHC1
+	default y
+
+choice
+	prompt "SD Host Controller Select"
+	depends on CONFIG_SDHC
+	default CONFIG_SDHC0
+	help
+	  This interface allow you select which SD Host Controller for the SD Card.
+
+config CONFIG_SDHC0
+	bool "On SDHC0"
+	depends on CPU_HAS_SDHC0
+
+config CONFIG_SDHC1
+	bool "On SDHC1"
+	depends on CPU_HAS_SDHC1
+
+endchoice
+
 
 config CONFIG_FATFS
   bool
   depends on CONFIG_SDCARD
   default y if CONFIG_SDCARD
-
-config CONFIG_LONG_FILENAME
-  bool "Support Long FileName(LFN)"
-  depends on CONFIG_FATFS
-	default y if !AT91SAM9G10
-  help
-    Configure support to FatFS Long FileName(LFN)
 
 endmenu
 
@@ -218,13 +250,14 @@ endif
 if CONFIG_NANDFLASH
 	source "driver/Config.in.nandflash"
 endif
+
 endmenu
 
 config ALLOW_ROM_EBI
   bool
   default y if CONFIG_AT91SAMA5D3XEK
   default n if !CONFIG_AT91SAMA5D3XEK
-  default n if CONFIG_SAMA5D31_BEEAVE
+  default n if (CONFIG_SAMA5D31_BEEAVE || CONFIG_SAMA5D2_PROTO888A || CONFIG_SAMA5D2_PROTO888B || CONFIG_SAMA5D2_PROTO888C || CONFIG_SAMA5D2_PROD358A || CONFIG_SAMA5D2_PROD358B || CONFIG_SAMA5D2_PROD358D)
 
 if ALLOW_ROM_EBI
   source "driver/Config.in.memory.ebi"
@@ -232,18 +265,19 @@ endif
 
 
 config CONFIG_WITH_MMU
-  bool "Activate MMU"
+  bool "Activate MMU (EXPERIMENTAL)"
   depends on ALLOW_WITH_MMU
   default n
   help
-    "Use the MMU"
+    "Use the MMU (EXPERIMENTAL code, bug down the application at the moment ! )"
 
 config CONFIG_WITH_CACHE
-  bool "Activate the cache management"
+  bool "Activate the cache management (EXPERIMENTAL)"
   depends on ALLOW_WITH_CACHE && CONFIG_WITH_MMU
   default n
   help
-    "Cache activated, requires the MMU activation."
+    "Cache activated, requires the MMU activation. 
+    BEWARE : The cache is activated when the loaded application is started !! (EXPERIMENTAL, Work in progress)"
 
 config CONFIG_EXTERNAL_RAM_TEST
   depends on !CONFIG_ONLY_INTERNAL_RAM
@@ -260,8 +294,7 @@ config CONFIG_BOOTSTRAP_MAXSIZE
    default "4096" if AT91SAM9260
    default "8192" if AT91SAM9G10 && CONFIG_SDCARD
    default "12288" if AT91SAM9G10 && !CONFIG_SDCARD
-   default "65536"  if SAMA5D3X || SAMA5D4
+	default "65536"	if SAMA5D3X || SAMA5D4 || SAMA5D2
    default "23000"
-
 
 endmenu

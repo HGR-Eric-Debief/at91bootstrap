@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -77,7 +77,13 @@ int load_sdcard(struct image_info *image)
 	FRESULT	fret;
 	int	ret;
 
+#ifdef CONFIG_AT91_MCI
 	at91_mci0_hw_init();
+#endif
+
+#ifdef CONFIG_SDHC
+	at91_sdhc_hw_init();
+#endif
 
 	/* mount fs */
 	fret = f_mount(0, &fs);
@@ -100,31 +106,30 @@ int load_sdcard(struct image_info *image)
 		return -1;
 	}
 
-	if (image->of) {
-		if (sdcard_set_of_name)
-			sdcard_set_of_name(image->of_filename);
+#ifdef CONFIG_OF_LIBFDT
+	at91_board_set_dtb_name(image->of_filename);
 
-		/* mount fs */
-		fret = f_mount(0, &fs);
-		if (fret != FR_OK) {
-			dbg_info("*** FATFS: f_mount error **\n");
-			return -1;
-		}
-
-		dbg_info("SD/MMC: dt blob: Read file %s to %d\n",
-				image->of_filename, image->of_dest);
-
-		ret = sdcard_loadimage(image->of_filename, image->of_dest);
-		if (ret)
-			return ret;
-
-		/* umount fs */
-		fret = f_mount(0, NULL);
-		if (fret != FR_OK) {
-			dbg_info("*** FATFS: f_mount umount error **\n");
-			return -1;
-		}
+	/* mount fs */
+	fret = f_mount(0, &fs);
+	if (fret != FR_OK) {
+		dbg_info("*** FATFS: f_mount error **\n");
+		return -1;
 	}
+
+	dbg_info("SD/MMC: dt blob: Read file %s to %d\n",
+			image->of_filename, image->of_dest);
+
+	ret = sdcard_loadimage(image->of_filename, image->of_dest);
+	if (ret)
+		return ret;
+
+	/* umount fs */
+	fret = f_mount(0, NULL);
+	if (fret != FR_OK) {
+		dbg_info("*** FATFS: f_mount umount error **\n");
+		return -1;
+	}
+#endif
 
 	return 0;
 }

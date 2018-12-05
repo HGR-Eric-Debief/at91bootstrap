@@ -2,14 +2,14 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2006, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
  * - Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the disclaiimer below.
+ * this list of conditions and the disclaimer below.
  *
  * Atmel's name may not be used to endorse or promote products derived from
  * this software without specific prior written permission.
@@ -29,19 +29,24 @@
 #define __PMC_H__
 
 extern void pmc_init_pll(unsigned int pmc_pllicpr);
-extern int pmc_cfg_plla(unsigned int pmc_pllar, unsigned int timeout);
-extern int pmc_cfg_pllb(unsigned int pmc_pllbr, unsigned int timeout);
-extern int pmc_cfg_mck(unsigned int pmc_mckr, unsigned int timeout);
+extern int pmc_cfg_plla(unsigned int pmc_pllar);
+extern int pmc_cfg_mck(unsigned int pmc_mckr);
+extern int pmc_cfg_mck_down(unsigned int pmc_mckr);
 extern int pmc_cfg_pck(unsigned char x,
 			unsigned int clk_sel,
 			unsigned int prescaler);
 
-extern int pmc_cfg_h32mxdiv(unsigned int pmc_mckr, unsigned int timeout);
 extern int pmc_enable_periph_clock(unsigned int periph_id);
 extern int pmc_disable_periph_clock(unsigned int periph_id);
+extern int pmc_periph_clock_enabled(unsigned int periph_id);
 extern void pmc_enable_system_clock(unsigned int clock_id);
 extern void pmc_disable_system_clock(unsigned int clock_id);
 extern void pmc_set_smd_clock_divider(unsigned int divider);
+
+extern int pmc_sam9x5_enable_periph_clk(unsigned int periph_id);
+extern void pmc_enable_periph_generated_clk(unsigned int periph_id);
+extern void pmc_sam9x5_disable_periph_clk(unsigned int periph_id);
+extern unsigned int pmc_get_generated_clock(unsigned int periph_id);
 
 extern unsigned int pmc_read_reg(unsigned int reg_offset);
 extern int pmc_periph_clk(unsigned int periph_id, unsigned int is_on);
@@ -51,5 +56,8 @@ extern int pmc_uckr_clk(unsigned int is_on);
 extern unsigned int pmc_usb_setup(void);
 extern void pmc_smd_setup(unsigned int val);
 extern void pmc_pck_setup(unsigned int reg_offset, unsigned int reg_value);
+
+extern int pmc_check_mck_h32mxdiv(void);
+extern unsigned int at91_get_ahb_clock(void);
 
 #endif	/* #ifndef __PMC_H__ */

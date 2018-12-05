@@ -2,7 +2,7 @@
  *         ATMEL Microcontroller Software Support
  * ----------------------------------------------------------------------------
  * Copyright (c) 2013, Atmel Corporation
-
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@ struct peri_security {
 };
 
 static const struct peri_security peri_security_array[] = {
+#if defined(SAMA5D4)
 	/* SAIC */
 	{
 		.peri_id = AT91C_ID_FIQ,
@@ -455,6 +456,7 @@ static const struct peri_security peri_security_array[] = {
 		.matrix = MATRIX_H64MX,
 		.security_type = SECURITY_TYPE_AS,
 	},
+#endif	/* #if defined(SAMA5D4) */
 };
 
 
@@ -608,6 +610,7 @@ int matrix_configure_peri_security(unsigned int *peri_id_array,
 	return 0;
 }
 
+#if defined(SAMA5D4)
 /*
  * is_peripheral_secure - tell if the peripheral is in secure mode
  * @periph_id: the peripheral id that is checked
@@ -690,3 +693,4 @@ int is_switching_clock_forbiden(unsigned int periph_id, unsigned int is_on, unsi
 		return 0;
 	}
 }
+#endif /* #if defined(SAMA5D4) */

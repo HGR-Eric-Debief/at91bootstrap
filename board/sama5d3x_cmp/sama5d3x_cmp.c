@@ -151,7 +151,7 @@ static void lpddr2_init(void)
 	reg |= AT91C_MPDDRC_TZQIO_3;
 	writel(reg, (AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR));
 
-	lpddr2_sdram_initialize(AT91C_BASE_MPDDRC,
+	ddram_initialize(AT91C_BASE_MPDDRC,
 				AT91C_BASE_DDRCS, &ddramc_reg);
 }
 #else
@@ -184,16 +184,16 @@ void hw_init(void)
 	at91_disable_wdt();
 
 	/* Configure PLLA = MOSC * (PLL_MULA + 1) / PLL_DIVA */
-	pmc_cfg_plla(PLLA_SETTINGS, PLL_LOCK_TIMEOUT);
+	pmc_cfg_plla(PLLA_SETTINGS);
 
 	/* Initialize PLLA charge pump */
 	pmc_init_pll(AT91C_PMC_IPLLA_3);
 
 	/* Switch PCK/MCK on Main clock output */
-	pmc_cfg_mck(BOARD_PRESCALER_MAIN_CLOCK, PLL_LOCK_TIMEOUT);
+	pmc_cfg_mck(BOARD_PRESCALER_MAIN_CLOCK);
 
 	/* Switch PCK/MCK on PLLA output */
-	pmc_cfg_mck(BOARD_PRESCALER_PLLA, PLL_LOCK_TIMEOUT);
+	pmc_cfg_mck(BOARD_PRESCALER_PLLA);
 
 	/* Initialize timer */
 	timer_init();
@@ -232,10 +232,12 @@ void at91_spi0_hw_init(void)
 #endif /* #ifdef CONFIG_DATAFLASH */
 
 #ifdef CONFIG_SDCARD
-static void sdcard_set_of_name_board(char *of_name)
+#ifdef CONFIG_OF_LIBFDT
+void at91_board_set_dtb_name(char *of_name)
 {
 	strcat(of_name, "sama5d3x_cmp.dtb");
 }
+#endif
 
 void at91_mci0_hw_init(void)
 {
@@ -258,8 +260,6 @@ void at91_mci0_hw_init(void)
 	pio_configure(mci_pins);
 
 	pmc_enable_periph_clock(AT91C_ID_HSMCI0);
-
-	sdcard_set_of_name = &sdcard_set_of_name_board;
 }
 #endif /* #ifdef CONFIG_SDCARD */
 
@@ -456,6 +456,17 @@ int at91_board_act8865_set_reg_voltage(void)
 	}
 
 	dbg_info("ACT8865: REG2: Output 1250mV\n");
+
+	/* Enable REG4(VDDANA) output 3.3V */
+	reg = REG4_0;
+	value = ACT8865_3V3;
+	ret = act8865_set_reg_voltage(reg, value);
+	if (ret) {
+		dbg_info("ACT8865: Failed to make REG4 output 3300mV\n");
+		return -1;
+	}
+
+	dbg_info("ACT8865: The REG4 output 3300mV\n");
 
 	return 0;
 }
