@@ -84,7 +84,7 @@ void ddramc_init(void)
 #endif
   writel(reg, (AT91C_BASE_MPDDRC + MPDDRC_IO_CALIBR));
 
-  writel(AT91C_MPDDRC_RD_DATA_PATH_TWO_CYCLES,
+  writel(AT91C_MPDDRC_RD_DATA_PATH_ONE_CYCLES,
       (AT91C_BASE_MPDDRC + MPDDRC_RD_DATA_PATH));
   
   /* LP-DDRAM1 Controller initialization */
