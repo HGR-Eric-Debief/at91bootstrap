@@ -380,13 +380,18 @@ void hw_init(void)
 	writel(AT91C_RSTC_KEY_UNLOCK | AT91C_RSTC_URSTEN,
 					AT91C_BASE_RSTC + RSTC_RMR);
 
-	/* initialize the dbgu */
-	initialize_dbgu();
-  usart_puts("... BOOTING ...\n");
-  
 #if defined(CONFIG_MATRIX)
   /* Initialize the matrix */
   matrix_init();
+#endif
+
+	/* initialize the dbgu , NO LOG possible before !!*/
+	initialize_dbgu();
+  usart_puts("... BOOTING ...\n");
+  
+#if (BOOTSTRAP_DEBUG_LEVEL >= DEBUG_LOUD)
+  dbg_info("\nPMCKR register:\n");
+  dbg_hexdump((unsigned char *)(AT91C_BASE_PMC + PMC_MCKR), 1, DUMP_WIDTH_BIT_32);
 #endif
 
 	/* Init timer */

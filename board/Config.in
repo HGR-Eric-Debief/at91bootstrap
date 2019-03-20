@@ -198,7 +198,7 @@ config SAMA5D2
 	select CPU_HAS_AES
 	select CPU_HAS_L2CC
 	select CPU_HAS_SCKC
-	#select CPU_HAS_H32MXDIV
+	select CPU_HAS_H32MXDIV
 	select CPU_HAS_PIO4
 	select CPU_HAS_PMECC
 	select CPU_HAS_TRUSTZONE
